@@ -23,7 +23,6 @@
  *		Red = SDI
  */
 
-// #include <newanddelete.h> // For Arduino before 1.0, new and delete operators.
 #include <ledcontroller.h>
 
 using LedController::Color;
@@ -36,40 +35,66 @@ Color prettyblue(0x6FBAFC);
 #define PIN_SDI 2		// Red data wire (not the red 5V wire!)
 #define PIN_CKI 3		// Green wire
 #define PIN_STATUS_LED 13	// On board LED
-#define LED_TRANSITION_TIME 25  // Sets the transition time between individual LEDs
+#define LED_TRANSITION_TIME 2   // Sets the transition time between individual LEDs
+#define NUM_BUCKETS 8         // Sets the number of LED groups on the strip
 
 // RandomMarquee marquee = RandomMarquee();
 LedStrip ledStrip = LedStrip(PIN_SDI, PIN_CKI);
 
 // int currentLevel = 0;
-int backgroundNoise = 0;
+int bgNoise = 0;
 
-int loopCounter = 0;
-int currentLED = 0;
-int targetLED = 0;
+//int loopCounter = 0;
+//int currentLED = 0;
+//int targetLED = 0;
+int currentBucket = 0;
+int prevBucket = 0;
 
 void setup() {
-  backgroundNoise = analogRead(A0);
-
-//  pinMode(PIN_STATUS_LED, OUTPUT);
   ledStrip.setup();
-
-  randomSeed(analogRead(0));
-
   ledStrip.clear();
   ledStrip.send();
-
   delay(2000);
 
-  for (int i = 0; i < 1000; i++) {
-    backgroundNoise = (backgroundNoise + analogRead(A0)) / 2;
-  }
-
   Serial.begin(9600);
+  Serial.println("Shh!");
+  calculateBGNoise();
+  delay(1500);
+  Serial.println("Start Talking!");
+  delay(1500);
 }
 
 void loop() {
-  int mic;
+  int mic = analogRead(A0);
+
+  currentBucket = getMicBucket(mic, bgNoise);
+  
+//  targetLED = micToLED(removeBGNoise_Munaf(mic));
+  
+  if (currentBucket > prevBucket) {
+    Serial.println("Increasing");     // prints the current light 
+    for (int i = prevBucket; i <= currentBucket; i++) {
+      setLEDBucket(i);
+    }
+  }
+  else if (currentBucket < prevBucket) {
+    Serial.println("Decreasing");     // prints the current light 
+    for (int i = currentBucket; i >= prevBucket; i++) {
+      clearLEDBucket(i);
+    }
+  }
+  else { Serial.println("I ain't doing shit"); }
+    
+  prevBucket = currentBucket;
+
+//  String string1 = "Current LED: " + currentLED;
+//  String string2 = ", Target LED:" + targetLED;
+
+//  Serial.println(currentLED, DEC);     // prints the current light 
+
+  ledStrip.send();
+  
+  /*
   if (loopCounter >= LED_TRANSITION_TIME) {
     loopCounter = 0;
     if (targetLED < currentLED) {
@@ -81,47 +106,62 @@ void loop() {
       currentLED++;
     }
     else {
+      Serial.println("MIC ME!!!!!!!!!!");
       mic = analogRead(A0);
-      mic = removeBackgroundNoise(mic);
+      mic = removeBGNoise_Munaf(mic);
       targetLED = micToLED(mic);
       loopCounter = 0;
+      calculateBGNoise();
     }
   }
-  
+
   loopCounter++;
-  
-  Serial.println(currentLED, DEC);     // prints the current light 
-  
-  ledStrip.send();
-      
-      
-  /*    
-  int mic = analogRead(A0);
-  Serial.println(mic, DEC);     // prints the value read
-  int prevLevel = currentLevel;
-  
-  mic = removeBackgroundNoise(mic);
-  currentLevel = micToLED(mic);
-
-  Serial.println(currentLevel, DEC);     // prints the current light 
-
-  ledStrip.send();
-  */
-
+*/
 }
 
 
-int removeBackgroundNoise(int mic) {
-  if (mic < backgroundNoise) {
+
+int getMicBucket(int mic, int background) {
+  int micBucket = ((1023 - background) / NUM_BUCKETS);
+  mic = (mic);
+  return ((mic - background) / micBucket);
+}
+
+int setLEDBucket(int bucket) {
+  int bucketLength = (32 / NUM_BUCKETS);
+  int bucketStart = (bucketLength * bucket);
+
+  for (int i = bucketStart; i <= (bucketStart + bucketLength); i++) {
+    ledStrip.getColors()[i].add(prettyblue.scaled(0.5));
+  }
+}
+
+int clearLEDBucket(int bucket) {
+  int bucketLength = (32 / NUM_BUCKETS);
+  int bucketStart = (bucketLength * bucket);
+
+  for (int i = bucketStart; i <= (bucketStart + bucketLength); i++) {
+    ledStrip.getColors()[i].clear();
+  }
+}
+
+int calculateBGNoise() {
+  bgNoise = analogRead(A0);
+  for (int i = 0; i < 500; i++) {
+    bgNoise = (bgNoise + analogRead(A0)) / 2;
+  }
+}
+
+int removeBGNoise(int mic) {
+  if (mic < bgNoise) {
     mic = 0;
   } 
   else { 
-    mic = mic - backgroundNoise;
+    mic = mic - bgNoise;
   }
-  return mic;
+  return map(mic, 0, 1023, 0, (1023-bgNoise));
 }
 
-
 int micToLED(int mic) {
-  return map(mic, 0, (1023 - backgroundNoise), 0, 31);
+  return map(mic, 0, (1023 - bgNoise), 0, 31);
 }
