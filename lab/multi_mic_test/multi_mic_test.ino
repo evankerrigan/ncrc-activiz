@@ -1,4 +1,11 @@
-int ledPin[] = {\2, 4, 7, 8};
+// 1. Reads mic input
+// 2. Maps mic level input to LED output values
+// 3. Generates "equalizer visualization using 4 LEDs based on mic level input
+
+
+
+int ledPin[] = {
+  2, 4, 7, 8};
 int currentLevel = 0;
 
 void setup() {
@@ -27,13 +34,10 @@ void loop() {
     for (int i = prevLevel; i >= currentLevel; i--) {
       digitalWrite(ledPin[i], LOW);
     }
-  } else if (currentLevel > prevLevel) {
-  for (int i = prevLevel; i <= currentLevel; i++) {
-    digitalWrite(ledPin[i], HIGH);
+  } 
+  else if (currentLevel > prevLevel) {
+    for (int i = prevLevel; i <= currentLevel; i++) {
+      digitalWrite(ledPin[i], HIGH);
+    }
   }
 }
-}
-
-
-
-
