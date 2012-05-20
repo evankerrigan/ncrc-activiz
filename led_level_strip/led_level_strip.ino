@@ -46,17 +46,21 @@ void loop() {
   
   // Clear or Set levels based on current filtered mic value
   if (tempLevel < currentLevel) {
+    Serial.println("SHOULD BE CLEARLING LEVEL");
     for (byte i = currentLevel; i >= tempLevel; i--) {
       clearLevel(i);
     }
     ledStrip.send();
   }
   else if (tempLevel > currentLevel) {
-    for (byte i = tempLevel; i <= currentLevel; i++) {
+    Serial.println("SHOULD BE SETTING LEVEL");
+    for (byte i = currentLevel; i <= tempLevel; i++) {
       setLevel(i);
     }
     ledStrip.send();
   }
+  
+  currentLevel = tempLevel;
 }
 
 
@@ -76,14 +80,13 @@ void loop() {
 byte levelLEDStart(byte level) {
   // Levels start at 0
   // # Pins / # Levels * Level = start
-  
   return constrain((NUM_LEDS / NUM_LEVELS) * level, 0, MAX_LED_LEVEL);
 }
 
 byte levelLEDEnd(byte level) {
   // Levels start at 0
   // # Pins / # Levels * Level + Pins-per-level = end
-  
+    
   return constrain(levelLEDStart(level) + (NUM_LEDS_LEVEL-1), 0, MAX_LED_LEVEL);
 }
 
@@ -91,7 +94,10 @@ byte levelLEDEnd(byte level) {
 void clearLevel(byte level) {
   // from start to end of level, run ledstrip.clear()
   
-  for (byte i = levelLEDStart(level); i <= levelLEDEnd(level); i++) {
+  byte first_led = levelLEDStart(level);
+  byte last_led = levelLEDEnd(level);
+  
+  for (byte i = first_led; i <= last_led; i++) {
     ledStrip.getColors()[i].clear();
   }
 }
@@ -99,8 +105,10 @@ void clearLevel(byte level) {
 // Colorizes a level (group of LEDs). Does not actually write to LED strip!
 void setLevel(byte level) {
   // from start to end of level, run ledstrip.add()
+  byte first_led = levelLEDStart(level);
+  byte last_led = levelLEDEnd(level);
   
-  for (byte i = levelLEDStart(level); i <= levelLEDEnd(level); i++) {
+  for (byte i = first_led; i <= last_led; i++) {
     ledStrip.getColors()[i].add(prettyblue.scaled(0.5));
   }
 }
