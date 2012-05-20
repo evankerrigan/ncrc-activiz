@@ -61,6 +61,9 @@ void loop() {
   }
   
   currentLevel = tempLevel;
+  
+  // Delay for a certain period so we don't blink too much
+  delay(100);
 }
 
 
@@ -73,9 +76,9 @@ void loop() {
 //  Levels start at zero. The number of levels per LED strip can be configured below.
 //************************************************************************************
 #define NUM_LEDS 32
-#define NUM_LEVELS 8
+#define NUM_LEVELS 16
 #define MAX_LED_LEVEL (NUM_LEVELS-1)
-#define NUM_LEDS_LEVEL 4
+#define NUM_LEDS_LEVEL (NUM_LEDS/NUM_LEVELS)
 
 byte levelLEDStart(byte level) {
   // Levels start at 0
@@ -107,11 +110,7 @@ void setLevel(byte level) {
   // from start to end of level, run ledstrip.add()
   int first_led = levelLEDStart(level);
   int last_led = levelLEDEnd(level);
-  
-  Serial.println("first led");
-  Serial.println(first_led);
-  Serial.println("last_led");
-  Serial.println(last_led);
+ 
   for (int i = first_led; i <= last_led; i++) {
     ledStrip.getColors()[i].add(prettyblue.scaled(0.5));
   }
