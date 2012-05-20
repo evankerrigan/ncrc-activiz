@@ -53,7 +53,7 @@ void loop() {
   }
   else if (tempLevel > currentLevel) {
     for (byte i = tempLevel; i <= currentLevel; i++) {
-      setLevel(i, orange.scaled(0.5));
+      setLevel(i);
     }
     ledStrip.send();
   }
@@ -97,11 +97,11 @@ void clearLevel(byte level) {
 }
 
 // Colorizes a level (group of LEDs). Does not actually write to LED strip!
-void setLevel(byte level, Color col) {
+void setLevel(byte level) {
   // from start to end of level, run ledstrip.add()
   
   for (byte i = levelLEDStart(level); i <= levelLEDEnd(level); i++) {
-    ledStrip.getColors()[i].add(col);
+    ledStrip.getColors()[i].add(prettyblue.scaled(0.5));
   }
 }
 
