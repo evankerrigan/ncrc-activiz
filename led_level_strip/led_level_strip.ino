@@ -11,9 +11,6 @@ Color prettyblue(0x6FBAFC);
 #define PIN_CKI 3		// Green wire
 #define PIN_MIC A0              // Microphone input
 
-#define LED_TRANSITION_TIME 2   // Sets the transition time between individual LEDs
-#define NUM_BUCKETS 8           // Sets the number of LED groups on the strip
-
 // RandomMarquee marquee = RandomMarquee();
 LedStrip ledStrip = LedStrip(PIN_SDI, PIN_CKI);
 
