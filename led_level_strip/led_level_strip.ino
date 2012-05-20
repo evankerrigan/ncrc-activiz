@@ -80,14 +80,14 @@ void loop() {
 byte levelLEDStart(byte level) {
   // Levels start at 0
   // # Pins / # Levels * Level = start
-  return constrain((NUM_LEDS / NUM_LEVELS) * level, 0, MAX_LED_LEVEL);
+  return constrain((NUM_LEDS / NUM_LEVELS) * level, 0, (NUM_LEDS - NUM_LEDS_LEVEL - 1));
 }
 
 byte levelLEDEnd(byte level) {
   // Levels start at 0
   // # Pins / # Levels * Level + Pins-per-level = end
     
-  return constrain(levelLEDStart(level) + (NUM_LEDS_LEVEL-1), 0, MAX_LED_LEVEL);
+  return constrain(levelLEDStart(level) + (NUM_LEDS_LEVEL-1), 0, NUM_LEDS - 1);
 }
 
 // Clears a level (group of LEDs). Does not actually write to LED strip!
@@ -105,10 +105,14 @@ void clearLevel(byte level) {
 // Colorizes a level (group of LEDs). Does not actually write to LED strip!
 void setLevel(byte level) {
   // from start to end of level, run ledstrip.add()
-  byte first_led = levelLEDStart(level);
-  byte last_led = levelLEDEnd(level);
+  int first_led = levelLEDStart(level);
+  int last_led = levelLEDEnd(level);
   
-  for (byte i = first_led; i <= last_led; i++) {
+  Serial.println("first led");
+  Serial.println(first_led);
+  Serial.println("last_led");
+  Serial.println(last_led);
+  for (int i = first_led; i <= last_led; i++) {
     ledStrip.getColors()[i].add(prettyblue.scaled(0.5));
   }
 }
