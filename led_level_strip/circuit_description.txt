@@ -9,7 +9,7 @@ RESISTOR
 - Wire in adjacent column (same row) as other end of resistor reaching back across the breadboard to [-]
 
 LED STRIP
-- Brown to same [-] column as the mic breakout board’s grounding (via resistor)
+- Brown (White) to same [-] column as the mic breakout board’s grounding (via resistor)
 - Blue to [+] on opposite side of breadboard (same column as mic breakout board’s VCC)
 - Green to Pin 3 on Arduino
 - Red to Pin 2 on Arduino
