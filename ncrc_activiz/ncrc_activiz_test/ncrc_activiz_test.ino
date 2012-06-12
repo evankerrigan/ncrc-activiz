@@ -32,12 +32,16 @@ unsigned long timeWhenHumanVoiceIsDetected;
 boolean debug = DEBUG_FLAG;
 boolean ledAnimationBegin = false;
 unsigned int ledAnimationFrameCounter = 0;
-unsigned int ledAnimationNumOfFrames = 1000;
-
+unsigned int ledAnimationNumOfFrames = 30;
+unsigned int bgAnimationFrameCounter = 0;
+unsigned int bgAnimationNumOfFrames = 200;
 
 // Using Classes from ledcontroller library
 using LedController::Color; 
 using LedController::LedStrip;
+
+Color red(0xFFFF00);
+Color prettyblue(0x6FBAFC);
 
 LedStrip ledStrips[] = {LedStrip(PIN_LED1_OUT_SDI, PIN_LED1_OUT_CKI),
                        LedStrip(PIN_LED2_OUT_SDI, PIN_LED2_OUT_CKI),
@@ -62,29 +66,63 @@ void setup()
   pinMode(PIN_IR_IN, INPUT);
   pinMode(PIN_MIC_IN, INPUT);
   
+  // Initialize ADC
   Serial.begin(9600);
   adcInit();
   adcCalb();
-  establishContact();  // send a byte to establish contact until Processing respon
+  
+  // Initialize LED strip
+  for(byte i=0; i < NUM_LED_STRIPS; i++){
+  ledStrips[i].setup();
+  ledStrips[i].clear();
+  ledStrips[i].send();
+  }
+  
+  delay(2000);
+  
+  //establishContact();  // send a byte to establish contact until Processing respon
 }
 
 void loop()
 {
+ 
+  
+  
   if (position == FFT_N)
   {
+    
+    //draw background
+    for(byte i=0; i < NUM_LED_STRIPS; i++){
+      ledStrips[i].clear();
+    }
+    float scale = 0.45 + 0.35*sin( ( float(bgAnimationFrameCounter)/float(bgAnimationNumOfFrames)) * 2*PI + PI/2 );
+    for(byte i=0; i < 32; i++){
+      for(byte j=0; j < NUM_LED_STRIPS; j++){
+        ledStrips[j].getColors()[i].add(prettyblue.scaled(scale));
+      }
+    }
+      
+    bgAnimationFrameCounter++;
+    if(ledAnimationFrameCounter >= bgAnimationNumOfFrames){
+      bgAnimationFrameCounter = 0;
+    }
+
+    
+    
+    
     fft_input(capture, bfly_buff);
     fft_execute(bfly_buff);
     fft_output(bfly_buff, spektrum);
 
-    Serial.println("Raw spectrum");
-    for(byte i = 0; i < 20; i++){
-      Serial.println(spektrum[i]);
-    }
+//    debug && Serial.println("Raw spectrum");
+//    for(byte i = 0; i < 20; i++){
+//      Serial.println(spektrum[i]);
+//    }
     
-    Serial.println("--end--");
+//    Serial.println("--end--");
     boolean detectHumanVoice = soundHandler.containHumanVoice(spektrum, 64);
     if(detectHumanVoice == true){
-      debug && Serial.println("**********************HUMAN VOICE***************");
+//      debug && Serial.println("**********************HUMAN VOICE***************");
       if(humanVoiceHasBeenDetected == true){
         //...
       } else {
@@ -102,9 +140,18 @@ void loop()
         humanVoiceHasBeenDetected = false;
       }
     } 
-    
-    if(ledAnimationBegin == true){
-      
+   
+     
+  if(ledAnimationBegin == true){
+      for(byte i=0; i < NUM_LED_STRIPS; i++){
+        ledStrips[i].clear();
+      }
+      float scale = 0.45 + 0.35*sin( ( float(ledAnimationFrameCounter)/float(ledAnimationNumOfFrames)) * 2*PI + PI/2 );
+      for(byte i=0; i < 32; i++){
+        for(byte j=0; j < NUM_LED_STRIPS; j++){
+          ledStrips[j].getColors()[i].add(red.scaled(scale));
+        }
+      }
       
       ledAnimationFrameCounter++;
       if(ledAnimationFrameCounter >= ledAnimationNumOfFrames){
@@ -112,10 +159,15 @@ void loop()
         ledAnimationFrameCounter = 0;
       }
       
-    }
+  }
+  
+  for(byte i=0; i < NUM_LED_STRIPS; i++){  
+    ledStrips[i].send();
+  }
   
    position = 0;
-  }
+  }//end position==FFT_N
+
 }
 
 void establishContact() {
@@ -160,5 +212,7 @@ void adcCalb(){
   zero = -midl/2;
   Serial.println("Done.");
 }
+
+
 
 
