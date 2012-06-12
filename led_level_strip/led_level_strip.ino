@@ -9,26 +9,33 @@ Color prettyblue(0x6FBAFC);
 
 #define PIN_SDI 2		// Red data wire (not the red 5V wire!)
 #define PIN_CKI 3		// Green wire
+#define PIN_SDI_2 4		// Red data wire (not the red 5V wire!)
+#define PIN_CKI_2 5		// Green wire
 #define PIN_MIC A1              // Microphone input
 
 // RandomMarquee marquee = RandomMarquee();
 LedStrip ledStrip = LedStrip(PIN_SDI, PIN_CKI);
-
+LedStrip ledStrip2 = LedStrip(PIN_SDI_2, PIN_CKI_2);
 // Global environment variables.
 int rawMicValue;
 int rawBackgroundNoise;
 byte currentLevel = 0;
+int testCounter;
 
 void setup() {
   // Gather Background Noise
   Serial.begin(9600);
   Serial.println("Calculating background noise.");
   calculateBGNoise();
+  testCounter = 0;
   
   // Clear the LED Strip
   ledStrip.setup();
+  ledStrip2.setup();
   ledStrip.clear();
+  ledStrip2.clear();
   ledStrip.send();
+  ledStrip2.send();
   
   delay(2000);
   
@@ -52,6 +59,7 @@ void loop() {
       clearLevel(i);
     }
     ledStrip.send();
+    ledStrip2.send();
   }
   else if (tempLevel > currentLevel) {
 //    Serial.println("SHOULD BE SETTING LEVEL");
@@ -59,12 +67,14 @@ void loop() {
       setLevel(i);
     }
     ledStrip.send();
+    ledStrip2.send();
   }
   
   currentLevel = tempLevel;
+
   
   // Delay for a certain period so we don't blink too much
-  delay(100);
+  delay(1);
 }
 
 
@@ -103,6 +113,7 @@ void clearLevel(byte level) {
     
   for (byte i = first_led; i <= last_led; i++) {
     ledStrip.getColors()[i].clear();
+    ledStrip2.getColors()[i].clear();
   }
 }
 
@@ -113,7 +124,8 @@ void setLevel(byte level) {
   int last_led = levelLEDEnd(level);
  
   for (int i = first_led; i <= last_led; i++) {
-    ledStrip.getColors()[i].add(prettyblue.scaled(0.2));
+    ledStrip.getColors()[i].add(prettyblue.scaled(0.8));
+    ledStrip2.getColors()[i].add(prettyblue.scaled(0.8));
   }
 }
 

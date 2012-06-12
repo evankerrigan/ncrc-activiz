@@ -41,10 +41,12 @@ void loop()
     fft_execute(bfly_buff);
     fft_output(bfly_buff, spektrum);
 
+    //Serial.println("spektrum start");
     for (byte i = 0; i < 64; i++){
       Serial.write(spektrum[i]);
     }
-   position = 0;
+    //Serial.println("spektrum end");
+    position = 0;
   }
 }
 
@@ -67,13 +69,16 @@ ISR(ADC_vect)
 
   position++;
 }
+
+
+
 void adcInit(){
   /*  REFS0 : VCC use as a ref, IR_AUDIO : channel selection, ADEN : ADC Enable, ADSC : ADC Start, ADATE : ADC Auto Trigger Enable, ADIE : ADC Interrupt Enable,  ADPS : ADC Prescaler  */
   // free running ADC mode, f = ( 16MHz / prescaler ) / 13 cycles per conversion 
   ADMUX = _BV(REFS0) | IR_AUDIO; // | _BV(ADLAR); 
 //  ADCSRA = _BV(ADSC) | _BV(ADEN) | _BV(ADATE) | _BV(ADIE) | _BV(ADPS2) | _BV(ADPS1) //prescaler 64 : 19231 Hz - 300Hz per 64 divisions
   ADCSRA = _BV(ADSC) | _BV(ADEN) | _BV(ADATE) | _BV(ADIE) | _BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0); // prescaler 128 : 9615 Hz - 150 Hz per 64 divisions, better for most music
-  sei();
+  sei(); //Enables interrupts by setting the global interrupt mask. 
 }
 void adcCalb(){
   Serial.println("Start to calc zero");

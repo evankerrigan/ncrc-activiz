@@ -97,12 +97,11 @@ void serialEvent(Serial myPort) {
     // If we have 6 bytes:
     if (serialCount > NumOfBars -1 ) {
 
-for (int x=0;x<NumOfBars;x++){
+      for (int x=0;x<NumOfBars;x++){
     
   bars[x] = int (yRatio*(ScreenHeight)*(serialInArray[x]/256.0));
 
 }
-
 
       // Send a capital A to request new sensor readings:
       myPort.write('A');
@@ -111,81 +110,4 @@ for (int x=0;x<NumOfBars;x++){
     }
   }
 }
-
-/////// Display any variables for testing here//////////////
-void Headings(){
-  fill(0 );
-  text("BarWidth",50,TextGap );   
-  text("BarGap",250,TextGap );  
-  text("DivisounsWidth",450,TextGap );
-  text(BarWidth,100,TextGap );    
-  text(BarGap,300,TextGap );    
-  text(DivisounsWidth,520,TextGap );
-}
-
-
-void PrintBars(){ 
-
-  int c=0;
-  for (int i=0;i<NumOfBars;i++){
-   
-    fill((0xe4+c),(255-bars[i]+c),(0x1a+c));
-    stroke(90);
-    rect(i*DivisounsWidth+LeftMargin,   ScreenHeight-GraphYposition,   BarWidth,   -bars[i]);
-    fill(0x2e,0x2a,0x2a);
-//    text(float(bars[i])/(yRatio*(ScreenHeight))*Vcc,   i*DivisounsWidth+LeftMargin+BarWidth/2,   ScreenHeight-bars[i]-5-GraphYposition );
-//    text("A",   i*DivisounsWidth+LeftMargin+BarWidth/2 -5,   ScreenHeight-GraphYposition+20 );
-//    text(i,   i*DivisounsWidth+LeftMargin+BarWidth/2 +5,   ScreenHeight-GraphYposition+20 );
-  }
-}
-
-void Axis(){
-
-  strokeWeight(1);
-  stroke(220);
-  for(float x=0;x<=NumOfVertSubDivisions;x++){
-
-    int bars=(ScreenHeight-GraphYposition)-int(yRatio*(ScreenHeight)*(x/NumOfVertSubDivisions));
-    line(LeftMargin-15,bars,ScreenWidth-RightMArgin-DivisounsWidth+50,bars);
-  }
-  strokeWeight(1);
-  stroke(180);
-  for(float x=0;x<=NumOfVertDivisions;x++){
-
-    int bars=(ScreenHeight-GraphYposition)-int(yRatio*(ScreenHeight)*(x/NumOfVertDivisions));
-    line(LeftMargin-15,bars,ScreenWidth-RightMArgin-DivisounsWidth+50,bars);
-  }
-  strokeWeight(2);
-  stroke(90);
-  line(LeftMargin-15, ScreenHeight-GraphYposition+2, ScreenWidth-RightMArgin-DivisounsWidth+50, ScreenHeight-GraphYposition+2);
-  line(LeftMargin-15,ScreenHeight-GraphYposition+2,LeftMargin-15,GraphYposition+80);
-  strokeWeight(1);
-}
-
-void Labels(){
-  textFont(font,18);
-  fill(50);
-  rotate(radians(-90));
-  text(yLabel,-ScreenHeight/2,LeftMargin-45);
-  textFont(font,10);
-  for(float x=0;x<=NumOfVertDivisions;x++){
-
-    int bars=(ScreenHeight-GraphYposition)-int(yRatio*(ScreenHeight)*(x/NumOfVertDivisions));
-    text(round(x),-bars,LeftMargin-20);
-  }
-
-  textFont(font,18);
-  rotate(radians(90));  
-  text(xLabel,LeftMargin+(ScreenWidth-LeftMargin-RightMArgin-50)/2,ScreenHeight-GraphYposition+40);
-  textFont(font,24);
-  fill(50);
-  text(Heading,LeftMargin+(ScreenWidth-LeftMargin-RightMArgin-50)/2,70);
-  textFont(font);
-
-  fill(150);
-  text(URL,ScreenWidth-RightMArgin-40,ScreenHeight-15);
-  textFont(font);
-
-}
-
 
