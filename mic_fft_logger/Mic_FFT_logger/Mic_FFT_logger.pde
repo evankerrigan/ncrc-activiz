@@ -90,7 +90,7 @@ void serialEvent(Serial myPort) {
     // Add the latest byte from the serial port to array:
     serialInArray[serialCount] = inByte;
     serialCount++; 
-    println(inByte);
+     
     // If we have 6 bytes:
     if (serialCount > NumOfBars -1 ) {
 
@@ -101,7 +101,7 @@ void serialEvent(Serial myPort) {
       
       print("\n");
       output.print("\n");
-      
+       
       // Reset serialCount:
       serialCount = 0;
     }

@@ -5,19 +5,7 @@
 #include <ffft.h>
 
 
-// Using Classes from ledcontroller library
-using LedController::Color; 
-using LedController::LedStrip;
 
-
-
-// Global Variables
-LedStrip ledStrips[] = {LedStrip(PIN_LED1_OUT_SDI, PIN_LED1_OUT_CKI),
-                       LedStrip(PIN_LED2_OUT_SDI, PIN_LED2_OUT_CKI),
-                       LedStrip(PIN_LED3_OUT_SDI, PIN_LED3_OUT_CKI),
-                       LedStrip(PIN_LED4_OUT_SDI, PIN_LED4_OUT_CKI),
-                       LedStrip(PIN_LED5_OUT_SDI, PIN_LED5_OUT_CKI),                     
-};
 
 
 //************************************************************************************
@@ -148,9 +136,7 @@ void loop(){
     Serial.println("--3--");
     
     // Should reset position at the end of the if statement!!!
-    Serial.println(position);
-    position = 0;
-    Serial.println(position);
+
   }
 }
 

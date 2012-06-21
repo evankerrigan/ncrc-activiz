@@ -6,9 +6,10 @@ using LedController::RandomMarquee;
 
 Color orange(0xFF6600);
 Color prettyblue(0x6FBAFC);
+Color dye(0x6F6F10);
 
-#define PIN_SDI 2		// Red data wire (not the red 5V wire!)
-#define PIN_CKI 3		// Green wire
+#define PIN_SDI 6		// Red data wire (not the red 5V wire!)
+#define PIN_CKI 7		// Green wire
 #define PIN_MIC A0              // Microphone input
 
 // RandomMarquee marquee = RandomMarquee();
@@ -135,7 +136,11 @@ void setLevel(byte level) {
   int last_led = levelLEDEnd(level);
  
   for (int i = first_led; i <= last_led; i++) {
-    ledStrip.getColors()[i].add(prettyblue.scaled(0.2));
+    if(i <= 15 ){
+      ledStrip.getColors()[i].add(dye.scaled(0.2));
+    } else {
+      ledStrip.getColors()[i].add(prettyblue.scaled(0.2));
+    }  
   }
 }
 
