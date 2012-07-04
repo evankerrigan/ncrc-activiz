@@ -1,7 +1,0 @@
-//
-//  PatternBarPlotToBarPlot.h
-//  
-//
-//  Created by mac on 6/21/12.
-//  Author: Chuan-Che Huang. chuanche@umich.edu
-//
