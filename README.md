@@ -39,3 +39,18 @@ Other Resources
 
 + [Arduino Forum](http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl)
 Community support
+
+Link Dependent Libraries to Arduino's libraries 
+-----------------------------------------------
+1. Clone the whole project, say /path/to/somewhere/ncrc-activiz
+2. Go to Arduino's extended library folder
+	In Mac: it should be somewhere like
+	/mac/Documents/Arduino/libraries
+3. Create folders for the libraries
+	$ mkdir ffft
+	$ mkdir ledcontroller	
+	$ mkdir NcrcViz
+4. Create symbolic link from the libraries in the project folder to Arduino's library folder
+	$ ln -s /path/to/somewhere/ncrc-activiz/libraries/ffft/* /mac/Documents/Arduino/libraries/ffft
+	$ ln -s /path/to/somewhere/ncrc-activiz/libraries/ledcontroller/* /mac/Documents/Arduino/libraries/ledcontroller
+	$ ln -s /path/to/somewhere/ncrc-activiz/libraries/NcrcViz/* /mac/Documents/Arduino/libraries/NcrcViz
