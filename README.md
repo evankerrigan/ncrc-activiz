@@ -47,7 +47,7 @@ Link Dependent Libraries to Arduino's libraries
 	In Mac: it should be somewhere like
 	/mac/Documents/Arduino/libraries
 + Create folders for the libraries
-	$ mkdir ffft
+- $ mkdir ffft
 	$ mkdir ledcontroller	
 	$ mkdir NcrcViz
 + Create symbolic link from the libraries in the project folder to Arduino's library folder
