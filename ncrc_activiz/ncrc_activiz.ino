@@ -7,6 +7,7 @@
 
 #define  IR_AUDIO  0 // ADC channel to capture
 #define A_MINUTE 10
+#define A_HOUR 10
 // Debug
 boolean debug = DEBUG_FLAG;
 //*****
@@ -57,11 +58,30 @@ LedStrip ledStrips[] = {LedStrip(PIN_LED1_OUT_SDI, PIN_LED1_OUT_CKI),
 
 // Interval for Controller
 Interval oneSec = Interval(1000);
+byte currentTimeSec = 0;
+byte currentTimeMin = 0;
+
+// Hour Animation States
+#define LAST_ROD_MOVEMENT_INI 0
+#define LAST_ROD_MOVEMENT_UPDATE 1
+#define MID_RODS_MOVEMENT_INI 2
+#define MID_RODS_MOVEMENT_UPDATE 3
+#define FIRST_ROD_MOVEMENT_INI 4
+#define FIRST_ROD_MOVEMENT_UPDATE 5
+#define FINISH 6
+
+// Control flags
+bool hourAnimationHasStarted = true;
+bool hourAnimationState = LAST_ROD_MOVEMENT_INI;
+
 
 // Pattern Sets
 PatternChangingColorColumn patCCC = PatternChangingColorColumn(purple1); //Pattern for Led strip 1
 PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, skyblue);
 PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
+PatternHourGlass patHourGlassesForPastHours[] = {PatternHourGlass(oceanicblue, algaegreen, darkgreen),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen)};
+PatternBarPlotToBarPlot patBarPlotToBarPlotForHourAni = PatternBarPlotToBarPlot(0,0,0,0,0);
 
 void setup()
 {  
@@ -84,6 +104,9 @@ void setup()
   patCCC.addColor(purple2);
   patCCC.addColor(purple3);
   patCCC.addColor(purple4);
+  
+  // Feed fake data for the hour glasses which stored the human voice information in the past hours
+  patHourGlassesForPastHours[0].setActualValueBeingStored(5);
 
 }
 
@@ -137,71 +160,73 @@ void loop()
 
   //*****CONTROLLER & RENDERER BEGIN*************************
 
+  // Every second do ...
   if(oneSec.update()){
     humanVoiceHasBeenDetected = false;
+    currentTimeSec++;
+    if(currentTimeSec >= A_MINUTE){
+      currentTimeSec = 0;
+      currentTimeMin++;
+      if(currentTimeMin >= A_HOUR){
+        hourAnimationHasStarted = true;
+      }
+    }
     oneSec.clearExpired();
   }
 
+  /* Render background */
   // Clear LED strips color
     for(byte i=0; i < NUM_LED_STRIPS; i++){
       ledStrips[i].clear();
     }
-
-  // 
-  if(humanVoiceHasBeenDetected == true){
-    patCCC.update();
-  }
-  
+    
   // Update the sinosoidal background patterns for all the LED strips inherited PatternSineWave class
   patHourGlassForSec.updateSine();
   patHourGlassForMin.updateSine();
+  patHourGlassesForPastHours[0].updateSine();  
+  /* finish render background*/
+
+  // 
+  if(humanVoiceHasBeenDetected == true){
+    // Continusly update within the current one second if human voice has been detected
+    // Put all the code that needs to continusly update somethings within the current when human voice
+    // is detected to here.
+    patCCC.update();
+  }
+  
+//  // Hour Animation
+//  if(hourAnimationHasStarted){
+//    switch(hourAnimationState){
+//      case LAST_ROD_MOVEMENT_INI:
+//        patBarPlotToBarPlotForHourAni = PatternBarPlotToBarPlot(5*4, 0, oceanicblue, algaegreen, 3000);
+//        hourAnimationState = LAST_ROD_MOVEMENT_UPDATE;
+//        break;
+//      case LAST_ROD_MOVEMENT_UPDATE:
+//        patBarPlotToBarPlotForHourAni.update();
+//        if(patBarPlotToBarPlotForHourAni.isExpired()){
+//          hourAnimationState = MID_RODS_MOVEMENT_INI;
+//          
+//        }
+//        patBarPlotToBarPlotForHourAni.apply(ledStrips[3].getColors());
+//        break;
+//      case MID_RODS_MOVEMENT_INI:
+//        if(true){ // A placeholder here, if the current rod hasn't finished it's animation, keep update it, 
+//                  // otherwise, update the second middle rods
+//        
+//        } else {
+//        
+//        }
+//        
+//    }
+//    
+//  } else {
+//    
+//  }
   
   // Put all the updated Colors onto the LED strips
   patCCC.apply(ledStrips[0].getColors());
   patHourGlassForSec.apply(ledStrips[1].getColors());
   patHourGlassForMin.apply(ledStrips[2].getColors());
-
-//    if(humanVoiceHasBeenDetected == true){
-////      randomMarquee.update();
-//      patternChangingColorColumn.update();
-//      unsigned long now = millis();
-//      if(now - timeWhenHumanVoiceIsDetected > 1000){
-//        humanVoiceHasBeenDetected = false;
-//      }
-//    }
-//
-////  randomMarquee.apply(ledStrips[1].getColors());
-//  patternBarPlotToBarPlot.updateSine();
-//  patternBarPlotToBarPlot.update();
-//  if(patternBarPlotToBarPlot.isExpired()){
-//    patternBarPlotToBarPlot = PatternBarPlotToBarPlot(0, 27, prettyblue, purple2, 500);
-//    token = (++token) % 2;
-//    if(token == 0){
-//      patternBarPlotToBarPlot = PatternBarPlotToBarPlot(27, 0, prettyblue, purple2, 500);
-//    }
-//    
-//  }
-//  switch(token)
-//  {
-//     case 0:
-//       patternBarPlotToBarPlot.apply(ledStrips[0].getColors());
-//       patternSineWave.
-//       break;
-//     case 1:
-//       patternBarPlotToBarPlot.apply(ledStrips[1].getColors());
-//       break;
-//     default:
-//       patternBarPlotToBarPlot.apply(ledStrips[0].getColors());
-//       break;
-//  }
-//  
-//  
-//  patternSineWave.update();
-//  patternSineWave.apply(ledStrips[2].getColors());
-//  
-//  patternChangingColorColumn.apply(ledStrips[3].getColors());
-
-
   
   for(byte i=0; i < NUM_LED_STRIPS; i++){  
     ledStrips[i].send();

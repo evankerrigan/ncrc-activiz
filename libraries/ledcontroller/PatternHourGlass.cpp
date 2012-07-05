@@ -96,8 +96,12 @@ void PatternHourGlass::apply(Color* stripColors)
 	if(inTransition){
 		// if the transitional animation is finised, change to render the pattern of normal state
 		if(patBarPlotToBarPlot.isExpired()){
-					inTransition = false;
-					patBarPlotToBarPlot.setExpired(false);
+			inTransition = false;
+			patBarPlotToBarPlot.setExpired(false);
+			
+			// reset the frozen indicator to it's current value
+			indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
+			indicator *= indicatorUnit;
 		}
 		
 		patBarPlotToBarPlot.updateSine();	
@@ -147,7 +151,9 @@ byte PatternHourGlass::getActualValueBeingStored()
 
 void PatternHourGlass::setActualValueBeingStored(byte value)
 {
-	actualValueBeingStored = value;
+	actualValueBeingStored = value-1; // actualValueBeingStored will be added 1 when update,  
+									  // so we store value-1 here, it is a tricky thing.
+	update();
 }
 
 void PatternHourGlass::setReverse(bool reverse)
