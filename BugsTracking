@@ -1,4 +1,5 @@
 + PatternBarPlotToBarPlot
-	- When restart(), will also restart the sinosoidal wave, which makes the pattern not that fluid.
+	- The movement of the LEDs looks not that pretty, should make it more fluid and organic.
 	
++ 	
  

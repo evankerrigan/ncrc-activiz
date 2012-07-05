@@ -72,6 +72,9 @@ PatternChangingColorColumn patternChangingColorColumn = PatternChangingColorColu
 // Barplot to Barplot Pattern
 PatternBarPlotToBarPlot patternBarPlotToBarPlot = PatternBarPlotToBarPlot(18, 0, prettyblue, red, 1000);
 
+// 
+byte token = 0;
+
 void setup()
 {  
   pinMode(PIN_IR_IN, INPUT);
@@ -137,7 +140,6 @@ void loop()
        
        } else {
 
-//          randomMarquee.update();
           patternHourGlass.update();
           
           humanVoiceHasBeenDetected = true;
@@ -172,9 +174,25 @@ void loop()
 //  randomMarquee.apply(ledStrips[1].getColors());
   patternBarPlotToBarPlot.updateSine();
   patternBarPlotToBarPlot.update();
-  patternBarPlotToBarPlot.apply(ledStrips[0].getColors());
   if(patternBarPlotToBarPlot.isExpired()){
-    patternBarPlotToBarPlot.restart();
+    patternBarPlotToBarPlot = PatternBarPlotToBarPlot(0, 27, prettyblue, purple2, 500);
+    token = (++token) % 2;
+    if(token == 0){
+      patternBarPlotToBarPlot = PatternBarPlotToBarPlot(27, 0, prettyblue, purple2, 500);
+    }
+    
+  }
+  switch(token)
+  {
+     case 0:
+       patternBarPlotToBarPlot.apply(ledStrips[0].getColors());
+       break;
+     case 1:
+       patternBarPlotToBarPlot.apply(ledStrips[1].getColors());
+       break;
+     default:
+       patternBarPlotToBarPlot.apply(ledStrips[0].getColors());
+       break;
   }
   
   
@@ -182,9 +200,9 @@ void loop()
   patternSineWave.apply(ledStrips[2].getColors());
   
   patternChangingColorColumn.apply(ledStrips[3].getColors());
-  
-  patternHourGlass.updateSine();
-  patternHourGlass.apply(ledStrips[1].getColors());
+//  
+//  patternHourGlass.updateSine();
+//  patternHourGlass.apply(ledStrips[1].getColors());
    
   /* Renderer's Code Begin */   
   if(ledAnimationBegin == true){

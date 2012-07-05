@@ -106,3 +106,8 @@ bool PatternBarPlotToBarPlot::isExpired()
 {
 	return expired;
 }
+
+void PatternBarPlotToBarPlot::setExpired(bool expired)
+{
+	this->expired = expired;
+}

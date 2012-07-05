@@ -52,6 +52,7 @@ public:
 	*	one action = turn on/off one individual led
 	*/
 	bool isExpired();
+	void setExpired(bool expired);
 	/**
 	*	Setter and Getter for reverse
 	*/
