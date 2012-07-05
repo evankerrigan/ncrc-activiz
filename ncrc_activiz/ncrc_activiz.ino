@@ -75,11 +75,21 @@ bool hourAnimationState = LAST_ROD_MOVEMENT_INI;
 
 // Pattern Sets
 PatternChangingColorColumn patCCC = PatternChangingColorColumn(purple1); //Pattern for Led strip 1
+
 PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, skyblue);
 PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
-PatternHourGlass patHourGlassesForPastHours[] = {PatternHourGlass(oceanicblue, algaegreen, darkgreen),
-                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen)};
-//PatternBarPlotToBarPlot patBarPlotToBarPlotForHourAni = PatternBarPlotToBarPlot(0,30,oceanicblue,algaegreen,1000);
+
+//PatternHourGlass patHourGlassForTest = PatternHourGlass(purple1, algaegreen, darkgreen);
+//PatternHourGlass patHourGlassesForPastHours[2] = { PatternHourGlass(oceanicblue, algaegreen, darkgreen),
+//                                                  PatternHourGlass(oceanicblue, algaegreen, darkgreen),
+//                                                };
+
+//PatternSineWave s1 = PatternSineWave(purple1);
+//PatternSineWave s2 = PatternSineWave(purple1);
+
+ProgressBarSine ps1 = ProgressBarSine(prettyblue, oceanicblue);
+ProgressBarSine ps2 = ProgressBarSine(prettyblue, oceanicblue);
+//PatternBarPlotToBarPlot patBarPlotToBarPlot = PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000);
 
 void setup()
 {  
@@ -104,7 +114,7 @@ void setup()
   patCCC.addColor(purple4);
   
   // Feed fake data for the hour glasses which stored the human voice information in the past hours
-  patHourGlassesForPastHours[0].setActualValueBeingStored(5);
+  //patHourGlassesForPastHours[0].setActualValueBeingStored(5);
 
 }
 
@@ -181,7 +191,7 @@ void loop()
   // Update the sinosoidal background patterns for all the LED strips inherited PatternSineWave class
   patHourGlassForSec.updateSine();
   patHourGlassForMin.updateSine();
-  patHourGlassesForPastHours[0].updateSine();  
+//  patHourGlassesForPastHours[0].updateSine();  
   /* finish render background*/
 
   // 
@@ -276,7 +286,3 @@ void adcCalb(){
   zero = -midl/2;
   Serial.println("Done.");
 }
-
-
-
-

@@ -24,12 +24,13 @@
 LED_CONTROLLER_NAMESPACE_USING
 
 PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, const Color& color2)
-:PatternSineWave(bgColor), patBarPlotToBarPlot(0, 0, bgColor, color1, 1000)
+:PatternSineWave(bgColor), patBarPlotToBarPlot(0, 1, bgColor, color1, 1000)
 {
 	this->bgColor = bgColor;
 	maxValueCanBePresentedOnHourGlass = 32;
 	reverse = false;
 	currentColorIndex = 0;
+	inTransition = false;
 	indicatorUnit = 4;
 	colors[0] = color1;
 	colors[1] = color2;
@@ -41,6 +42,7 @@ void PatternHourGlass::restart()
 	indicator = 0;
 	actualValueBeingStored = 0;
 	currentColorIndex = 0;
+	inTransition = false;
 }
 
 void PatternHourGlass::advance()

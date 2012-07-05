@@ -29,6 +29,9 @@ PatternBarPlotToBarPlot::PatternBarPlotToBarPlot(byte startPosition, byte endPos
 	this->endPosition = endPosition;
 	this->expired = false;
 	byte diff = abs(endPosition-startPosition);
+	if(diff == 0){
+		diff = 1;
+	}
 	unsigned long eachActionTimeInMilliSec = milliSecForMoveInterval/diff;
 	eachActionInterval.setInterval(eachActionTimeInMilliSec);
 
