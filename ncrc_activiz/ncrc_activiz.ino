@@ -1,5 +1,3 @@
-
-
 #include <stdint.h>
 #include <ffft.h>
 #include <NcrcViz.h>
