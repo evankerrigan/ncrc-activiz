@@ -1,5 +1,3 @@
-
-
 #include <stdint.h>
 #include <ffft.h>
 #include <NcrcViz.h>
@@ -81,7 +79,7 @@ PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, 
 PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
 PatternHourGlass patHourGlassesForPastHours[] = {PatternHourGlass(oceanicblue, algaegreen, darkgreen),
                                                  PatternHourGlass(oceanicblue, algaegreen, darkgreen)};
-PatternBarPlotToBarPlot patBarPlotToBarPlotForHourAni = PatternBarPlotToBarPlot(0,0,0,0,0);
+//PatternBarPlotToBarPlot patBarPlotToBarPlotForHourAni = PatternBarPlotToBarPlot(0,30,oceanicblue,algaegreen,1000);
 
 void setup()
 {  
@@ -163,14 +161,14 @@ void loop()
   // Every second do ...
   if(oneSec.update()){
     humanVoiceHasBeenDetected = false;
-    currentTimeSec++;
-    if(currentTimeSec >= A_MINUTE){
-      currentTimeSec = 0;
-      currentTimeMin++;
-      if(currentTimeMin >= A_HOUR){
-        hourAnimationHasStarted = true;
-      }
-    }
+//    currentTimeSec++;
+//    if(currentTimeSec >= A_MINUTE){
+//      currentTimeSec = 0;
+//      currentTimeMin++;
+//      if(currentTimeMin >= A_HOUR){
+//        hourAnimationHasStarted = true;
+//      }
+//    }
     oneSec.clearExpired();
   }
 
