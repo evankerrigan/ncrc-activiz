@@ -21,10 +21,11 @@
 #define DEFAULT_SINE_WAVE_ORIGIN 0.45	//min: 0.0 , max: 1.0
 #define DEFAULT_SINE_WAVE_AMPLITUDE 0.4	// origin + aplitude can not go over 1.0
 #define DEFAULT_BG_COLOR 0x000000
+
 LED_CONTROLLER_NAMESPACE_USING
 
 PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, const Color& color2)
-:PatternSineWave(bgColor), patBarPlotToBarPlot(0, 1, bgColor, color1, 1000)
+: PatternSineWave(bgColor)
 {
 	this->bgColor = bgColor;
 	maxValueCanBePresentedOnHourGlass = 32;
@@ -33,6 +34,15 @@ PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, co
 	indicatorUnit = 4;
 	colors[0] = color1;
 	colors[1] = color2;
+	
+	// Some problems happened when I directly use PatternBarPlotToBarPlot, 
+	// I haven't figure out how to elegantly inherit it to PatternHourGlass.
+	// Therefore, the code here is for temporary use which
+	// allows PatternHourGlass to have BarPlotToBarPlot animation
+	// whenever it is in *transition* state
+	
+	
+	
 	restart();
 }
 
@@ -65,10 +75,10 @@ void PatternHourGlass::advance()
 		// To make it looks more organic, and pretty, add PatternBarPlotToBarPlot
 		// Also, should lock the indicator when we are in transition state
 		inTransition = true;
-		patBarPlotToBarPlot.setStartPosition(indicator);
-		patBarPlotToBarPlot.setEndPosition(0);
-		patBarPlotToBarPlot.setBarColor(colors[tempColorIndex]);
-		patBarPlotToBarPlot.restart();
+		// patBarPlotToBarPlot.setStartPosition(indicator);
+		// 		patBarPlotToBarPlot.setEndPosition(0);
+		// 		patBarPlotToBarPlot.setBarColor(colors[tempColorIndex]);
+		// 		patBarPlotToBarPlot.restart();
 	}
 	if(!inTransition)	//lock the indicator when the pattern is in transition state
 	{
@@ -97,18 +107,20 @@ void PatternHourGlass::apply(Color* stripColors)
 	
 	if(inTransition){
 		// if the transitional animation is finised, change to render the pattern of normal state
-		if(patBarPlotToBarPlot.isExpired()){
-			inTransition = false;
-			patBarPlotToBarPlot.setExpired(false);
-			
-			// reset the frozen indicator to it's current value
-			indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
-			indicator *= indicatorUnit;
-		}
+		// if(patBarPlotToBarPlot.isExpired()){
+		// 			inTransition = false;
+		// 			patBarPlotToBarPlot.setExpired(false);
+		// 			
+		// 			// reset the frozen indicator to it's current value
+		// 			indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
+		// 			indicator *= indicatorUnit;
+		// 		}
+		// 		
+		// 		patBarPlotToBarPlot.updateSine();	
+		// 		patBarPlotToBarPlot.update();
+		// 		patBarPlotToBarPlot.apply(stripColors);
 		
-		patBarPlotToBarPlot.updateSine();	
-		patBarPlotToBarPlot.update();
-		patBarPlotToBarPlot.apply(stripColors);
+		
 
 				
 	} else {

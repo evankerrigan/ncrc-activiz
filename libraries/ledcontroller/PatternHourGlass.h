@@ -37,8 +37,6 @@ private:
 	Color bgColor;
 	Color colors[DEFAULT_MAX_COLORS];
 	byte currentColorIndex;
-	PatternBarPlotToBarPlot patBarPlotToBarPlot;
-	bool inTransition;
 	
 	//Interval colorTransitionInterval;
 	

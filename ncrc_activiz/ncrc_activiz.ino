@@ -68,18 +68,27 @@ byte currentTimeMin = 0;
 #define FIRST_ROD_MOVEMENT_UPDATE 5
 #define FINISH 6
 
+// Rod 2 State (Hour Glass)
+#define NORMAL  0
+#define TRANSITION  0 
+
 // Control flags
 bool hourAnimationHasStarted = true;
 bool hourAnimationState = LAST_ROD_MOVEMENT_INI;
+byte rod2State = NORMAL;
 
 
 // Pattern Sets
 PatternChangingColorColumn patCCC = PatternChangingColorColumn(red); //Pattern for Led strip 1
 
-//PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, skyblue);
+PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, skyblue);
+PatternHourGlass patHourGlassForSec2 = PatternHourGlass(prettyblue, oceanicblue, skyblue);
+//PatternHourGlass patHourGlassForSec3 = PatternHourGlass(prettyblue, oceanicblue, skyblue);
 //PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
-
 //PatternHourGlass patHourGlassForTest = PatternHourGlass(purple1, purple2, purple3);
+//PatternHourGlass patHourGlassForMin1 = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
+//PatternHourGlass patHourGlassForMin2 = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
+
 //PatternHourGlass patHourGlassesForPastHours[2] = { PatternHourGlass(oceanicblue, algaegreen, darkgreen),
 //                                                  PatternHourGlass(oceanicblue, algaegreen, darkgreen),
 //                                                };
@@ -90,7 +99,14 @@ PatternChangingColorColumn patCCC = PatternChangingColorColumn(red); //Pattern f
 
 //ProgressBarSine ps1 = ProgressBarSine(prettyblue, oceanicblue);
 //ProgressBarSine ps2 = ProgressBarSine(prettyblue, oceanicblue);
-PatternBarPlotToBarPlot patBarPlotToBarPlot = PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000);
+
+//PatternBarPlotToBarPlot patBarPlotToBarPlot1 = PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000);
+//PatternBarPlotToBarPlot patBarPlotToBarPlot2 = PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000);
+//PatternBarPlotToBarPlot patBarPlotToBarPlot3 = PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000);
+////
+//PatternBarPlotToBarPlot patBarPlotToBarPlot4 = PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000);
+//PatternBarPlotToBarPlot patBarPlotToBarPlot5 = PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000);
+//PatternBarPlotToBarPlot patBarPlotToBarPlot6 = PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000);
 
 void setup()
 {  
@@ -110,11 +126,11 @@ void setup()
   }
   
   // Initialize Patterns
-  patCCC.deleteAll();
-  patCCC.addColor(purple1);
+  //patCCC.deleteAll();
+  //patCCC.addColor(purple1);
   // Feed fake data for the hour glasses which stored the human voice information in the past hours
   //patHourGlassesForPastHours[0].setActualValueBeingStored(5);
-
+  Serial.println("Program Start");
 }
 
 void loop()
@@ -122,7 +138,7 @@ void loop()
   
   if (position == FFT_N)
   {
-    
+    //Serial.print(1);  
     /* Audio Signal Processor Begin*/
     // 1. FFT    
     fft_input(capture, bfly_buff);
@@ -164,7 +180,7 @@ void loop()
     
    position = 0;
   }//end position==FFT_N
-
+ 
   //*****CONTROLLER & RENDERER BEGIN*************************
 
   // Every second do ...
