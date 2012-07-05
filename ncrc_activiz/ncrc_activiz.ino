@@ -74,22 +74,23 @@ bool hourAnimationState = LAST_ROD_MOVEMENT_INI;
 
 
 // Pattern Sets
-PatternChangingColorColumn patCCC = PatternChangingColorColumn(purple1); //Pattern for Led strip 1
+PatternChangingColorColumn patCCC = PatternChangingColorColumn(red); //Pattern for Led strip 1
 
-PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, skyblue);
-PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
+//PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, skyblue);
+//PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
 
-//PatternHourGlass patHourGlassForTest = PatternHourGlass(purple1, algaegreen, darkgreen);
+//PatternHourGlass patHourGlassForTest = PatternHourGlass(purple1, purple2, purple3);
 //PatternHourGlass patHourGlassesForPastHours[2] = { PatternHourGlass(oceanicblue, algaegreen, darkgreen),
 //                                                  PatternHourGlass(oceanicblue, algaegreen, darkgreen),
 //                                                };
 
 //PatternSineWave s1 = PatternSineWave(purple1);
 //PatternSineWave s2 = PatternSineWave(purple1);
+//PatternSineWave s3 = PatternSineWave(purple1);
 
-ProgressBarSine ps1 = ProgressBarSine(prettyblue, oceanicblue);
-ProgressBarSine ps2 = ProgressBarSine(prettyblue, oceanicblue);
-//PatternBarPlotToBarPlot patBarPlotToBarPlot = PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000);
+//ProgressBarSine ps1 = ProgressBarSine(prettyblue, oceanicblue);
+//ProgressBarSine ps2 = ProgressBarSine(prettyblue, oceanicblue);
+PatternBarPlotToBarPlot patBarPlotToBarPlot = PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000);
 
 void setup()
 {  
@@ -109,10 +110,8 @@ void setup()
   }
   
   // Initialize Patterns
-  patCCC.addColor(purple2);
-  patCCC.addColor(purple3);
-  patCCC.addColor(purple4);
-  
+  patCCC.deleteAll();
+  patCCC.addColor(purple1);
   // Feed fake data for the hour glasses which stored the human voice information in the past hours
   //patHourGlassesForPastHours[0].setActualValueBeingStored(5);
 
@@ -151,13 +150,13 @@ void loop()
           *   For example, if you only want to update a Pattern one time when voices is detected in current 
           *   one second, you should put the update code here.
           **/
-          patHourGlassForSec.update();
+//          patHourGlassForSec.update();
           
-          byte timeStoredInHourGlassForSec = patHourGlassForSec.getActualValueBeingStored();
-          if(timeStoredInHourGlassForSec == A_MINUTE - 1){
-            patHourGlassForMin.update();
-            patHourGlassForSec.restart();
-          }
+          //byte timeStoredInHourGlassForSec = patHourGlassForSec.getActualValueBeingStored();
+//          if(timeStoredInHourGlassForSec == A_MINUTE - 1){
+////            patHourGlassForMin.update();
+////            patHourGlassForSec.restart();
+//          }
           
       }
       
@@ -189,8 +188,9 @@ void loop()
     }
     
   // Update the sinosoidal background patterns for all the LED strips inherited PatternSineWave class
-  patHourGlassForSec.updateSine();
-  patHourGlassForMin.updateSine();
+    patCCC.updateSine();
+//  patHourGlassForSec.updateSine();
+//  patHourGlassForMin.updateSine();
 //  patHourGlassesForPastHours[0].updateSine();  
   /* finish render background*/
 
@@ -233,8 +233,8 @@ void loop()
   
   // Put all the updated Colors onto the LED strips
   patCCC.apply(ledStrips[0].getColors());
-  patHourGlassForSec.apply(ledStrips[1].getColors());
-  patHourGlassForMin.apply(ledStrips[2].getColors());
+//  patHourGlassForSec.apply(ledStrips[1].getColors());
+//  patHourGlassForMin.apply(ledStrips[2].getColors());
   
   for(byte i=0; i < NUM_LED_STRIPS; i++){  
     ledStrips[i].send();

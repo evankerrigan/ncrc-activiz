@@ -30,7 +30,6 @@ PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, co
 	maxValueCanBePresentedOnHourGlass = 32;
 	reverse = false;
 	currentColorIndex = 0;
-	inTransition = false;
 	indicatorUnit = 4;
 	colors[0] = color1;
 	colors[1] = color2;
@@ -66,9 +65,10 @@ void PatternHourGlass::advance()
 		// To make it looks more organic, and pretty, add PatternBarPlotToBarPlot
 		// Also, should lock the indicator when we are in transition state
 		inTransition = true;
-		patBarPlotToBarPlot = PatternBarPlotToBarPlot(indicator, 
-								0, bgColor, colors[tempColorIndex], 1000);
-		
+		patBarPlotToBarPlot.setStartPosition(indicator);
+		patBarPlotToBarPlot.setEndPosition(0);
+		patBarPlotToBarPlot.setBarColor(colors[tempColorIndex]);
+		patBarPlotToBarPlot.restart();
 	}
 	if(!inTransition)	//lock the indicator when the pattern is in transition state
 	{

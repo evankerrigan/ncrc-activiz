@@ -116,3 +116,33 @@ void PatternBarPlotToBarPlot::setExpired(bool expired)
 {
 	this->expired = expired;
 }
+
+void PatternBarPlotToBarPlot::setStartPosition(byte position){
+	this->startPosition = position;
+}
+byte PatternBarPlotToBarPlot::getStartPosition(){
+	return startPosition;
+}
+
+void PatternBarPlotToBarPlot::setEndPosition(byte position){
+	this->endPosition = position;
+}
+byte PatternBarPlotToBarPlot::getEndPosition(){
+	return endPosition;
+}
+
+void PatternBarPlotToBarPlot::setBgColor(const Color& bgColor){
+	this->bgColor = bgColor;
+}
+Color PatternBarPlotToBarPlot::getBgColor(){
+	return bgColor;
+}
+
+void PatternBarPlotToBarPlot::setBarColor(const Color& barColor){
+	this->barColor = barColor;
+}
+Color PatternBarPlotToBarPlot::getBarColor(){
+	return barColor;
+}
+
+
