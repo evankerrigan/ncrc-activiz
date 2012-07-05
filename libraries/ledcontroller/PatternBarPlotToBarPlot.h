@@ -20,10 +20,10 @@ class PatternBarPlotToBarPlot : public PatternSineWave
 private:
 	byte startPosition;
 	byte endPosition;
-	Interval moveInterval;
 	Interval eachActionInterval;
 	byte currentPosition;
 	bool reverse;
+	bool expired;
 	Color bgColor;
 	Color barColor;
 	byte increment;
@@ -36,7 +36,7 @@ public:
 	*	moveInterval it has.
 	*/
 	PatternBarPlotToBarPlot(byte startPosition, byte endPosition, 
-		const Color& bgColor, const Color& barColor, unsigned long milliSecForInterval );
+		const Color& bgColor, const Color& barColor, unsigned long milliSecForMoveInterval);
 	
 	/**
 	*	@return whether a single action is being performed
@@ -55,8 +55,10 @@ public:
 	/**
 	*	Setter and Getter for reverse
 	*/
-	void setReverse();
+	void setReverse(bool reverse);
 	bool isReverse();
+	
+	void restart();
 };
 
 LED_CONTROLLER_NAMESPACE_EXIT

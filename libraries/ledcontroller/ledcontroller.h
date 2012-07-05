@@ -26,6 +26,6 @@
 #include "PatternSineWave.h"
 #include "PatternChangingColorColumn.h"
 #include "PatternHourGlass.h"	
-//1#include "PatternBarPlotToBarPlot.h"
+#include "PatternBarPlotToBarPlot.h"
 
 

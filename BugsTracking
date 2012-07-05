@@ -1,0 +1,4 @@
++ PatternBarPlotToBarPlot
+	- When restart(), will also restart the sinosoidal wave, which makes the pattern not that fluid.
+	
+ 

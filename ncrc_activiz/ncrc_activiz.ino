@@ -37,7 +37,7 @@ using LedController::RandomMarquee;
 using LedController::PatternSineWave;
 using LedController::PatternChangingColorColumn;
 using LedController::PatternHourGlass;
-//using LedController::PatternBarPlotToBarPlot;
+using LedController::PatternBarPlotToBarPlot;
 
 Color red(0xFF0000);
 Color prettyblue(0x6FBAFC);
@@ -70,7 +70,7 @@ PatternSineWave patternSineWave = PatternSineWave(red);
 PatternChangingColorColumn patternChangingColorColumn = PatternChangingColorColumn(purple1);
 
 // Barplot to Barplot Pattern
-//PatternBarPlotToBarPlot patternBarPlotToBarPlot = PatternBarPlotToBarPlot(18, 0, prettyblue, red, 1000);
+PatternBarPlotToBarPlot patternBarPlotToBarPlot = PatternBarPlotToBarPlot(18, 0, prettyblue, red, 1000);
 
 void setup()
 {  
@@ -170,6 +170,13 @@ void loop()
     }
 
 //  randomMarquee.apply(ledStrips[1].getColors());
+  patternBarPlotToBarPlot.updateSine();
+  patternBarPlotToBarPlot.update();
+  patternBarPlotToBarPlot.apply(ledStrips[0].getColors());
+  if(patternBarPlotToBarPlot.isExpired()){
+    patternBarPlotToBarPlot.restart();
+  }
+  
   
   patternSineWave.update();
   patternSineWave.apply(ledStrips[2].getColors());
