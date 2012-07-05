@@ -57,7 +57,16 @@ void PatternHourGlass::advance()
 	indicator *= indicatorUnit; 
 	
 	// Update color index
+	byte tempColorIndex = currentColorIndex;
 	currentColorIndex = (actualValueBeingStored / (maxValueCanBePresentedOnHourGlass/indicatorUnit)) % DEFAULT_MAX_COLORS;
+	if(tempColorIndex != currentColorIndex){
+		// HourGlass transform, from one color to another, 
+		// and the indicator will go down to zero
+		// To make it looks more organic, and pretty, add PatternBarPlotToBarPlot
+		inTransition = true;
+		patBarPlotToBarPlot();
+		
+	}
 }
 
 bool PatternHourGlass::update()

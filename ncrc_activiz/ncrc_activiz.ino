@@ -6,6 +6,7 @@
 #include <ledcontroller.h>
 
 #define  IR_AUDIO  0 // ADC channel to capture
+#define A_MINUTE 10
 // Debug
 boolean debug = DEBUG_FLAG;
 //*****
@@ -22,31 +23,31 @@ uint16_t spektrum[FFT_N/2];		/* Spectrum output buffer */
 //*****
 SoundHandler soundHandler = SoundHandler();
 boolean humanVoiceHasBeenDetected;
-unsigned long timeWhenHumanVoiceIsDetected;
-boolean ledAnimationBegin = false;
-unsigned int ledAnimationFrameCounter = 0;
-unsigned int ledAnimationNumOfFrames = 30;
-unsigned int bgAnimationFrameCounter = 0;
-unsigned int bgAnimationNumOfFrames = 100;
 
 // Using Classes from ledcontroller library
 using LedController::Color; 
 using LedController::LedStrip;
 using LedController::ProgressBarSine;
-using LedController::RandomMarquee;
 using LedController::PatternSineWave;
 using LedController::PatternChangingColorColumn;
 using LedController::PatternHourGlass;
 using LedController::PatternBarPlotToBarPlot;
+using LedController::Interval;
 
+// Colors Used
 Color red(0xFF0000);
 Color prettyblue(0x6FBAFC);
+Color oceanicblue(0x00FF80);
+Color skyblue(0x00FFFF);
 Color dye(0x6F6F10);
+Color algaegreen(0x80FF00);
+Color darkgreen(0x00FF00);
 Color purple1(0x800080);
-Color purple2(0x700070);
-Color purple3(0x600060);
-Color purple4(0x500050);
+Color purple2(0x700075);
+Color purple3(0x600070);
+Color purple4(0x500075);
 
+// Assign PINs to Led Strips
 LedStrip ledStrips[] = {LedStrip(PIN_LED1_OUT_SDI, PIN_LED1_OUT_CKI),
                        LedStrip(PIN_LED2_OUT_SDI, PIN_LED2_OUT_CKI),
                        LedStrip(PIN_LED3_OUT_SDI, PIN_LED3_OUT_CKI),
@@ -54,26 +55,13 @@ LedStrip ledStrips[] = {LedStrip(PIN_LED1_OUT_SDI, PIN_LED1_OUT_CKI),
                        LedStrip(PIN_LED5_OUT_SDI, PIN_LED5_OUT_CKI),                     
 };
 
-// Progress bar
-//ProgressBarSine pBarSine = ProgressBarSine(dye, prettyblue);
+// Interval for Controller
+Interval oneSec = Interval(1000);
 
-// RandomMarquee Pattern
-//RandomMarquee randomMarquee = RandomMarquee();
-
-// Hour Glass Pattern
-PatternHourGlass patternHourGlass = PatternHourGlass(prettyblue, red, purple1);
-
-// Sine Wave Pattern
-PatternSineWave patternSineWave = PatternSineWave(red);
-
-// ColorChangingColumn Pattern
-PatternChangingColorColumn patternChangingColorColumn = PatternChangingColorColumn(purple1);
-
-// Barplot to Barplot Pattern
-PatternBarPlotToBarPlot patternBarPlotToBarPlot = PatternBarPlotToBarPlot(18, 0, prettyblue, red, 1000);
-
-// 
-byte token = 0;
+// Pattern Sets
+PatternChangingColorColumn patCCC = PatternChangingColorColumn(purple1); //Pattern for Led strip 1
+PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, skyblue);
+PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
 
 void setup()
 {  
@@ -92,128 +80,128 @@ void setup()
     ledStrips[i].send();
   }
   
-  
-  
-  // Set the default LED color
-//  randomMarquee.update();
-//  randomMarquee.apply(ledStrips[1].getColors());
-//  ledStrips[1].send();
-  
-  patternChangingColorColumn.addColor(purple2);
-  patternChangingColorColumn.addColor(purple3);
-  patternChangingColorColumn.addColor(purple4);
+  // Initialize Patterns
+  patCCC.addColor(purple2);
+  patCCC.addColor(purple3);
+  patCCC.addColor(purple4);
 
-  
-  delay(2000);
-  
-  //establishContact();  // send a byte to establish contact until Processing respon
 }
 
 void loop()
 {
- 
-  
   
   if (position == FFT_N)
   {
     
-
-
     /* Audio Signal Processor Begin*/
     // 1. FFT    
     fft_input(capture, bfly_buff);
     fft_execute(bfly_buff);
     fft_output(bfly_buff, spektrum);
-
-//    debug && Serial.println("Raw spectrum");
-//    for(byte i = 0; i < 20; i++){
-//      Serial.println(spektrum[i]);
-//    }
-    
-//    Serial.println("--end--");
     
     // 2. Audio Recognizer
     boolean detectHumanVoice = soundHandler.containHumanVoice(spektrum, 64);
     if(detectHumanVoice == true){
+      /** Set humanVoiceHasBeenDetected to TRUE
+       *       ____   ________   <--- humanVoiceHasBeenDetected will be set to TRUE for the while one second period.
+       *       |  |   |      |
+       * _0sec_|1 |2__|3  4  |5__
+      **/
       if(humanVoiceHasBeenDetected == true){
-          
-       
-       } else {
-
-          patternHourGlass.update();
-          
+        if(oneSec.update()){
+          humanVoiceHasBeenDetected = false;
+        }
+      } else {
+          // First time detect voice within current one second
           humanVoiceHasBeenDetected = true;
-          timeWhenHumanVoiceIsDetected = millis();
-          if(ledAnimationBegin == false){
-            ledAnimationBegin = true;
-         }
-       }
-  
+          
+          /** Should put all the Pattern updates which will only happened *one* time
+          *   in each second here.
+          *   For example, if you only want to update a Pattern one time when voices is detected in current 
+          *   one second, you should put the update code here.
+          **/
+          patHourGlassForSec.update();
+          
+          byte timeStoredInHourGlassForSec = patHourGlassForSec.getActualValueBeingStored();
+          if(timeStoredInHourGlassForSec == A_MINUTE - 1){
+            patHourGlassForMin.update();
+            patHourGlassForSec.restart();
+          }
+          
+      }
+      
     }
     
-    
-  
    position = 0;
   }//end position==FFT_N
 
-  //clear background
+  //*****CONTROLLER & RENDERER BEGIN*************************
+
+  if(oneSec.update()){
+    humanVoiceHasBeenDetected = false;
+    oneSec.clearExpired();
+  }
+
+  // Clear LED strips color
     for(byte i=0; i < NUM_LED_STRIPS; i++){
       ledStrips[i].clear();
     }
 
-
-    if(humanVoiceHasBeenDetected == true){
-//      randomMarquee.update();
-      patternChangingColorColumn.update();
-      unsigned long now = millis();
-      if(now - timeWhenHumanVoiceIsDetected > 1000){
-        humanVoiceHasBeenDetected = false;
-      }
-    }
-
-//  randomMarquee.apply(ledStrips[1].getColors());
-  patternBarPlotToBarPlot.updateSine();
-  patternBarPlotToBarPlot.update();
-  if(patternBarPlotToBarPlot.isExpired()){
-    patternBarPlotToBarPlot = PatternBarPlotToBarPlot(0, 27, prettyblue, purple2, 500);
-    token = (++token) % 2;
-    if(token == 0){
-      patternBarPlotToBarPlot = PatternBarPlotToBarPlot(27, 0, prettyblue, purple2, 500);
-    }
-    
-  }
-  switch(token)
-  {
-     case 0:
-       patternBarPlotToBarPlot.apply(ledStrips[0].getColors());
-       break;
-     case 1:
-       patternBarPlotToBarPlot.apply(ledStrips[1].getColors());
-       break;
-     default:
-       patternBarPlotToBarPlot.apply(ledStrips[0].getColors());
-       break;
+  // 
+  if(humanVoiceHasBeenDetected == true){
+    patCCC.update();
   }
   
+  // Update the sinosoidal background patterns for all the LED strips inherited PatternSineWave class
+  patHourGlassForSec.updateSine();
+  patHourGlassForMin.updateSine();
   
-  patternSineWave.update();
-  patternSineWave.apply(ledStrips[2].getColors());
-  
-  patternChangingColorColumn.apply(ledStrips[3].getColors());
+  // Put all the updated Colors onto the LED strips
+  patCCC.apply(ledStrips[0].getColors());
+  patHourGlassForSec.apply(ledStrips[1].getColors());
+  patHourGlassForMin.apply(ledStrips[2].getColors());
+
+//    if(humanVoiceHasBeenDetected == true){
+////      randomMarquee.update();
+//      patternChangingColorColumn.update();
+//      unsigned long now = millis();
+//      if(now - timeWhenHumanVoiceIsDetected > 1000){
+//        humanVoiceHasBeenDetected = false;
+//      }
+//    }
+//
+////  randomMarquee.apply(ledStrips[1].getColors());
+//  patternBarPlotToBarPlot.updateSine();
+//  patternBarPlotToBarPlot.update();
+//  if(patternBarPlotToBarPlot.isExpired()){
+//    patternBarPlotToBarPlot = PatternBarPlotToBarPlot(0, 27, prettyblue, purple2, 500);
+//    token = (++token) % 2;
+//    if(token == 0){
+//      patternBarPlotToBarPlot = PatternBarPlotToBarPlot(27, 0, prettyblue, purple2, 500);
+//    }
+//    
+//  }
+//  switch(token)
+//  {
+//     case 0:
+//       patternBarPlotToBarPlot.apply(ledStrips[0].getColors());
+//       patternSineWave.
+//       break;
+//     case 1:
+//       patternBarPlotToBarPlot.apply(ledStrips[1].getColors());
+//       break;
+//     default:
+//       patternBarPlotToBarPlot.apply(ledStrips[0].getColors());
+//       break;
+//  }
 //  
-//  patternHourGlass.updateSine();
-//  patternHourGlass.apply(ledStrips[1].getColors());
-   
-  /* Renderer's Code Begin */   
-  if(ledAnimationBegin == true){
-      
-      ledAnimationFrameCounter++;
-      if(ledAnimationFrameCounter >= ledAnimationNumOfFrames){
-        ledAnimationBegin = false;
-        ledAnimationFrameCounter = 0;
-      }
-      
-  }
+//  
+//  patternSineWave.update();
+//  patternSineWave.apply(ledStrips[2].getColors());
+//  
+//  patternChangingColorColumn.apply(ledStrips[3].getColors());
+
+
   
   for(byte i=0; i < NUM_LED_STRIPS; i++){  
     ledStrips[i].send();
