@@ -27,6 +27,7 @@ PatternBarPlotToBarPlot::PatternBarPlotToBarPlot(byte startPosition, byte endPos
 	this->barColor = barColor;
 	this->startPosition = startPosition;
 	this->endPosition = endPosition;
+	this->expired = false;
 	byte diff = abs(endPosition-startPosition);
 	unsigned long eachActionTimeInMilliSec = milliSecForMoveInterval/diff;
 	eachActionInterval.setInterval(eachActionTimeInMilliSec);
@@ -35,6 +36,7 @@ PatternBarPlotToBarPlot::PatternBarPlotToBarPlot(byte startPosition, byte endPos
 	increment = (startPosition > endPosition) ? -1: 1;
 	currentPosition = startPosition;
 }
+
 
 void PatternBarPlotToBarPlot::restart()
 {

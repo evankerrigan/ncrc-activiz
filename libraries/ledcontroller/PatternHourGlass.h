@@ -11,6 +11,7 @@
 #include "Namespace.h"
 #include "Color.h"
 #include "PatternSineWave.h"
+#include "PatternBarPlotToBarPlot.h"
 #include "Interval.h"
 
 #define DEFAULT_MAX_COLORS 2

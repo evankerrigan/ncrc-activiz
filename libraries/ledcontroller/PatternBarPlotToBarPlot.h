@@ -37,7 +37,7 @@ public:
 	*/
 	PatternBarPlotToBarPlot(byte startPosition, byte endPosition, 
 		const Color& bgColor, const Color& barColor, unsigned long milliSecForMoveInterval);
-	
+		
 	/**
 	*	@return whether a single action is being performed
 	*	multiple actions = one total animation

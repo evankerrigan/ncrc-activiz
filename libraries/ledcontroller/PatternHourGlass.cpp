@@ -24,7 +24,7 @@
 LED_CONTROLLER_NAMESPACE_USING
 
 PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, const Color& color2)
-:PatternSineWave(bgColor)
+:PatternSineWave(bgColor), patBarPlotToBarPlot(0, 0, bgColor, color1, 1000)
 {
 	this->bgColor = bgColor;
 	maxValueCanBePresentedOnHourGlass = 32;
@@ -52,20 +52,27 @@ void PatternHourGlass::advance()
 		actualValueBeingStored++;
 	}
 	
-	// Update indicator
-	indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
-	indicator *= indicatorUnit; 
 	
 	// Update color index
 	byte tempColorIndex = currentColorIndex;
 	currentColorIndex = (actualValueBeingStored / (maxValueCanBePresentedOnHourGlass/indicatorUnit)) % DEFAULT_MAX_COLORS;
+	
+	// Check whether the state should be change to *transition state*
 	if(tempColorIndex != currentColorIndex){
 		// HourGlass transform, from one color to another, 
 		// and the indicator will go down to zero
 		// To make it looks more organic, and pretty, add PatternBarPlotToBarPlot
+		// Also, should lock the indicator when we are in transition state
 		inTransition = true;
-		patBarPlotToBarPlot();
+		patBarPlotToBarPlot = PatternBarPlotToBarPlot(indicator, 
+								0, bgColor, colors[tempColorIndex], 1000);
 		
+	}
+	if(!inTransition)	//lock the indicator when the pattern is in transition state
+	{
+		// Update indicator
+		indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
+		indicator *= indicatorUnit;
 	}
 }
 
@@ -81,27 +88,46 @@ void PatternHourGlass::apply(Color* stripColors)
 	//	from indicator color i to indicator color (i+1)
 	//	...code
 	
+	// The pattern has two states, inTransition and normal
+	// everytime when the indicaotr reach the highest point, a transitional pattern
+	// will show up for certain seconds, after the transitional pattern is animated
+	// the pattern will change back to the normal state.
 	
-	if(isReverse())
-	{
-		for(byte i = STRIP_LENGTH-1; i > (STRIP_LENGTH-1)-indicator; i--){
-			float scale = calculateScale(i);
-			stripColors[i].add(colors[currentColorIndex].scaled(scale));	
+	if(inTransition){
+		// if the transitional animation is finised, change to render the pattern of normal state
+		if(patBarPlotToBarPlot.isExpired()){
+					inTransition = false;
+					patBarPlotToBarPlot.setExpired(false);
 		}
-		for(byte i = (STRIP_LENGTH-1) - indicator; i >= 0; i--){
-			float scale = calculateScale(i);
-			stripColors[i].add(bgColor.scaled(scale));
-		}
+		
+		patBarPlotToBarPlot.updateSine();	
+		patBarPlotToBarPlot.update();
+		patBarPlotToBarPlot.apply(stripColors);
+
+				
 	} else {
-		for(byte i = 0; i < indicator; i++){
-			float scale = calculateScale(i);
-			stripColors[i].add(colors[currentColorIndex].scaled(scale));
+		// Normal State
+		if(isReverse())
+		{
+			for(byte i = STRIP_LENGTH-1; i > (STRIP_LENGTH-1)-indicator; i--){
+				float scale = calculateScale(i);
+				stripColors[i].add(colors[currentColorIndex].scaled(scale));	
+			}
+			for(byte i = (STRIP_LENGTH-1) - indicator; i >= 0; i--){
+				float scale = calculateScale(i);
+				stripColors[i].add(bgColor.scaled(scale));
+			}
+		} else {
+			for(byte i = 0; i < indicator; i++){
+				float scale = calculateScale(i);
+				stripColors[i].add(colors[currentColorIndex].scaled(scale));
+			}
+			for(byte i = indicator; i < STRIP_LENGTH; i++ ){
+				float scale = calculateScale(i);
+				stripColors[i].add(bgColor.scaled(scale));
+			}
 		}
-		for(byte i = indicator; i < STRIP_LENGTH; i++ ){
-			float scale = calculateScale(i);
-			stripColors[i].add(bgColor.scaled(scale));
-		}
-	}
+	}// End Normal State
 }
 
 void PatternHourGlass::setMaxValueCanBePresentedOnHourGlass(byte maxValue)
