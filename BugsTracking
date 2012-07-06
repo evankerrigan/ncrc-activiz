@@ -4,3 +4,12 @@
 + PatternChangingColorColumn 
 	- deleteAll() 	
  		function works very strange.
+
++ PatternBarPlotToBarPlot
+	- Should define a fix action time
+	- Check all the setters and getters check whether the pattern should
+	  restart() once a variable is updated.
+	
++ slave
+	- Finish LAST_ROD_MOVEMENT
+	- Debug Hour Animation, it is still buggy now.
