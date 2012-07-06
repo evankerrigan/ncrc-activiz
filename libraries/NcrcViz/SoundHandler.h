@@ -42,10 +42,4 @@ public:
 	byte getEvent(unsigned long avgSquaredMicValue, unsigned long minSquaredMicValue, unsigned long maxSquaredMicValue);
 	bool containHumanVoice( uint16_t* spectrum, int length);
 	bool debug;
-private:
-	//byte states[];
-	unsigned long previousMicValues[NUM_PREVIOUS_SAMPLES];
-	unsigned long previousMicValueDiffs[NUM_PREVIOUS_SAMPLES-1];
-	byte currentSampleIndex;
-	
 };

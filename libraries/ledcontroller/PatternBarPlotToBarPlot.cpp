@@ -16,6 +16,7 @@
 #endif
 
 #define DEFAULT_ACTION_INTERVAL 10
+#define DEFAULT_COLOR 0x000000
 
 LED_CONTROLLER_NAMESPACE_USING
 
@@ -29,6 +30,9 @@ PatternBarPlotToBarPlot::PatternBarPlotToBarPlot(byte startPosition, byte endPos
 	this->endPosition = endPosition;
 	this->expired = false;
 	byte diff = abs(endPosition-startPosition);
+	if(diff == 0){
+		diff = 1;
+	}
 	unsigned long eachActionTimeInMilliSec = milliSecForMoveInterval/diff;
 	eachActionInterval.setInterval(eachActionTimeInMilliSec);
 
@@ -48,13 +52,13 @@ void PatternBarPlotToBarPlot::restart()
 bool PatternBarPlotToBarPlot::update()
 {
 	eachActionInterval.update();
-		if(eachActionInterval.isExpired()){
-			eachActionInterval.clearExpired();
-			advance();
-			return true;
-		} else {
-			return false;
-		}	
+	if(eachActionInterval.isExpired()){
+		eachActionInterval.clearExpired();
+		advance();
+		return true;
+	} else {
+		return false;
+	}	
 }
 
 void PatternBarPlotToBarPlot::advance()
@@ -113,3 +117,33 @@ void PatternBarPlotToBarPlot::setExpired(bool expired)
 {
 	this->expired = expired;
 }
+
+void PatternBarPlotToBarPlot::setStartPosition(byte position){
+	this->startPosition = position;
+}
+byte PatternBarPlotToBarPlot::getStartPosition(){
+	return startPosition;
+}
+
+void PatternBarPlotToBarPlot::setEndPosition(byte position){
+	this->endPosition = position;
+}
+byte PatternBarPlotToBarPlot::getEndPosition(){
+	return endPosition;
+}
+
+void PatternBarPlotToBarPlot::setBgColor(const Color& bgColor){
+	this->bgColor = bgColor;
+}
+Color PatternBarPlotToBarPlot::getBgColor(){
+	return bgColor;
+}
+
+void PatternBarPlotToBarPlot::setBarColor(const Color& barColor){
+	this->barColor = barColor;
+}
+Color PatternBarPlotToBarPlot::getBarColor(){
+	return barColor;
+}
+
+

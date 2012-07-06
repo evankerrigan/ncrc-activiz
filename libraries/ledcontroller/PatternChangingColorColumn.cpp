@@ -124,7 +124,7 @@ bool PatternChangingColorColumn::deleteAll()
 	if(isEmpty()){
 		return false;
 	} else {
-		colorArrayTop = -1;
+		colorArrayTop = 0;
 		return true;
 	}
 	
@@ -140,7 +140,7 @@ bool PatternChangingColorColumn::isFull()
 
 bool PatternChangingColorColumn::isEmpty()
 {
-	if(colorArrayTop == -1)
+	if(colorArrayTop == 0)
 		return true;
 	else 
 		return false;

@@ -19,7 +19,7 @@
 #define NUM_LEDS 32
 #define NUM_LED_STRIPS_SLAVE 5
 #define NUM_LED_STRIPS_MASTER 4
-#define NUM_LED_STRIPS 5 //For Compatability
+#define NUM_LED_STRIPS 4 //For Compatability
 #define SLAVE_ADDRESS 1
 
 #define EVENT_DETECT_HUMAN_VOICE 1

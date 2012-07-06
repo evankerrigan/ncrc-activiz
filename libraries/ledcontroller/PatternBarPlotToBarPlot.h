@@ -60,6 +60,22 @@ public:
 	bool isReverse();
 	
 	void restart();
+	
+	/**
+	*	Setter and Getter for startPosition, endPosition, bgColor, barColor
+	*/
+	void setStartPosition(byte position);
+	byte getStartPosition();
+	
+	void setEndPosition(byte position);
+	byte getEndPosition();
+	
+	void setBgColor(const Color& bgColor);
+	Color getBgColor();
+	
+	void setBarColor(const Color& barColor);
+	Color getBarColor();
+	
 };
 
 LED_CONTROLLER_NAMESPACE_EXIT

@@ -1,5 +1,6 @@
 + PatternBarPlotToBarPlot
 	- The movement of the LEDs looks not that pretty, should make it more fluid and organic.
 	
-+ 	
- 
++ PatternChangingColorColumn 
+	- deleteAll() 	
+ 		function works very strange.
