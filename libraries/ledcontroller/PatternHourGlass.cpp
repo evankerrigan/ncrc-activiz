@@ -17,32 +17,19 @@
 
 #define DEFAULT_MAX_LEDS_USED_BY_INDICATOR 32
 
-// Parameters for sine wave control
-#define DEFAULT_SINE_WAVE_ORIGIN 0.45	//min: 0.0 , max: 1.0
-#define DEFAULT_SINE_WAVE_AMPLITUDE 0.4	// origin + aplitude can not go over 1.0
-#define DEFAULT_BG_COLOR 0x000000
-
+#define DEFAULT_TRANSITION_TIME 2000
 LED_CONTROLLER_NAMESPACE_USING
 
 PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, const Color& color2)
-: PatternSineWave(bgColor)
+:PatternSineWave(bgColor), transitionEachActionInterval(DEFAULT_TRANSITION_TIME)
 {
 	this->bgColor = bgColor;
-	maxValueCanBePresentedOnHourGlass = 32;
+	maxValueCanBePresentedOnHourGlass = 30;
 	reverse = false;
 	currentColorIndex = 0;
 	indicatorUnit = 4;
 	colors[0] = color1;
 	colors[1] = color2;
-	
-	// Some problems happened when I directly use PatternBarPlotToBarPlot, 
-	// I haven't figure out how to elegantly inherit it to PatternHourGlass.
-	// Therefore, the code here is for temporary use which
-	// allows PatternHourGlass to have BarPlotToBarPlot animation
-	// whenever it is in *transition* state
-	
-	
-	
 	restart();
 }
 
@@ -51,7 +38,6 @@ void PatternHourGlass::restart()
 	indicator = 0;
 	actualValueBeingStored = 0;
 	currentColorIndex = 0;
-	inTransition = false;
 }
 
 void PatternHourGlass::advance()
@@ -75,10 +61,9 @@ void PatternHourGlass::advance()
 		// To make it looks more organic, and pretty, add PatternBarPlotToBarPlot
 		// Also, should lock the indicator when we are in transition state
 		inTransition = true;
-		// patBarPlotToBarPlot.setStartPosition(indicator);
-		// 		patBarPlotToBarPlot.setEndPosition(0);
-		// 		patBarPlotToBarPlot.setBarColor(colors[tempColorIndex]);
-		// 		patBarPlotToBarPlot.restart();
+		transitionColorIndex = tempColorIndex;
+		iniTransition();
+		
 	}
 	if(!inTransition)	//lock the indicator when the pattern is in transition state
 	{
@@ -107,20 +92,17 @@ void PatternHourGlass::apply(Color* stripColors)
 	
 	if(inTransition){
 		// if the transitional animation is finised, change to render the pattern of normal state
-		// if(patBarPlotToBarPlot.isExpired()){
-		// 			inTransition = false;
-		// 			patBarPlotToBarPlot.setExpired(false);
-		// 			
-		// 			// reset the frozen indicator to it's current value
-		// 			indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
-		// 			indicator *= indicatorUnit;
-		// 		}
-		// 		
-		// 		patBarPlotToBarPlot.updateSine();	
-		// 		patBarPlotToBarPlot.update();
-		// 		patBarPlotToBarPlot.apply(stripColors);
+		if(isTransitionExpired()){
+			inTransition = false;
+			setTransitionExpired(false);
+			
+			// reset the frozen indicator to it's current value
+			indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
+			indicator *= indicatorUnit;
+		}
 		
-		
+	 	transitionUpdate();
+		transitionApply(stripColors);
 
 				
 	} else {
@@ -193,5 +175,103 @@ void PatternHourGlass::setIndicatorUnit(byte unit)
 byte PatternHourGlass::getIndicatorUnit()
 {
 	return indicatorUnit;
+}
+
+byte PatternHourGlass::getIndicator()
+{
+	return indicator;
+}
+Color PatternHourGlass::getBgColor()
+{
+	return bgColor;
+}
+Color PatternHourGlass::getIndicatorColor()
+{
+	return colors[currentColorIndex];
+}
+
+
+void PatternHourGlass::iniTransition()
+{
+	this->transitionStartPosition = indicator;
+	this->transitionEndPosition = 0;
+	this->transitionExpired = false;
+	byte diff = abs(transitionEndPosition-transitionStartPosition);
+	if(diff == 0){
+		diff = 1;
+	}
+	unsigned long eachActionTimeInMilliSec = DEFAULT_TRANSITION_TIME/diff;
+	transitionEachActionInterval.setInterval(eachActionTimeInMilliSec);
+	transitionIncrement = (transitionStartPosition > transitionEndPosition) ? -1: 1;
+	transitionCurrentPosition = transitionStartPosition;
+	
+}
+
+bool PatternHourGlass::transitionUpdate()
+{
+	transitionEachActionInterval.update();
+	if(transitionEachActionInterval.isExpired()){
+		transitionEachActionInterval.clearExpired();
+		transitionAdvance();
+		return true;
+	} else {
+		return false;
+	}
+	
+}
+
+void PatternHourGlass::transitionAdvance()
+{
+	if(transitionCurrentPosition != transitionEndPosition)
+		transitionCurrentPosition += transitionIncrement;
+	
+	// Once the current position reaches the end point
+	// set the Led Animation state to 'expired'
+	if(transitionCurrentPosition == transitionEndPosition){
+		this->transitionExpired = true;
+	}
+	
+	
+}
+
+void PatternHourGlass::transitionApply(Color* stripColors)
+{
+	if(isReverse())
+	{
+		for(byte i = STRIP_LENGTH-1; i > (STRIP_LENGTH-1)-transitionCurrentPosition; i--){
+			float scale = calculateScale(i);
+			stripColors[i].add(colors[transitionColorIndex].scaled(scale));	
+		}
+		for(byte i = (STRIP_LENGTH-1) - transitionCurrentPosition; i >= 0; i--){
+			float scale = calculateScale(i);
+			stripColors[i].add(bgColor.scaled(scale));
+		}
+	} else {
+		for(byte i = 0; i < transitionCurrentPosition; i++){
+			float scale = calculateScale(i);
+			stripColors[i].add(colors[transitionColorIndex].scaled(scale));
+		}
+		for(byte i = transitionCurrentPosition; i < STRIP_LENGTH; i++ ){
+			float scale = calculateScale(i);
+			stripColors[i].add(bgColor.scaled(scale));
+		}
+	}
+	
+}
+
+bool PatternHourGlass::isTransitionExpired()
+{
+	return transitionExpired;
+}
+void PatternHourGlass::setTransitionExpired(bool expired)
+{
+	transitionExpired = expired;
+}
+
+void PatternHourGlass::transitionRestart()
+{
+	transitionExpired = false;
+	transitionCurrentPosition = transitionStartPosition;
+	transitionEachActionInterval.clearExpired();
 }
 

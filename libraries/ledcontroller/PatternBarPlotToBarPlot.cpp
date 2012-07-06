@@ -52,13 +52,13 @@ void PatternBarPlotToBarPlot::restart()
 bool PatternBarPlotToBarPlot::update()
 {
 	eachActionInterval.update();
-		if(eachActionInterval.isExpired()){
-			eachActionInterval.clearExpired();
-			advance();
-			return true;
-		} else {
-			return false;
-		}	
+	if(eachActionInterval.isExpired()){
+		eachActionInterval.clearExpired();
+		advance();
+		return true;
+	} else {
+		return false;
+	}	
 }
 
 void PatternBarPlotToBarPlot::advance()

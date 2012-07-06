@@ -37,6 +37,17 @@ private:
 	Color bgColor;
 	Color colors[DEFAULT_MAX_COLORS];
 	byte currentColorIndex;
+	bool inTransition;
+
+private: //Variables for Embedded PatternBarPlotToBarPlot
+	byte transitionStartPosition;
+	byte transitionEndPosition;
+	Interval transitionEachActionInterval;
+	byte transitionCurrentPosition;
+	bool transitionExpired;
+	byte transitionIncrement;
+	byte transitionColorIndex;
+	
 	
 	//Interval colorTransitionInterval;
 	
@@ -98,6 +109,38 @@ public:
 	*/
 	void setIndicatorUnit(byte unit);
 	byte getIndicatorUnit();
+
+	byte getIndicator();
+	Color getBgColor();
+	Color getIndicatorColor();
+
+	/**
+	*	Methods for Transition
+	*/
+private:
+	
+	void iniTransition();
+	
+	/**
+	*	@return whether a single action is being performed
+	*	multiple actions = one total animation
+	*/
+	bool transitionUpdate();
+	
+	void transitionAdvance();
+	
+	void transitionApply(Color* stripColors);
+	
+	/*
+	*	@return true if the whole animation is finished 
+	*	which means all the actions are finished
+	*	one action = turn on/off one individual led
+	*/
+	bool isTransitionExpired();
+	void setTransitionExpired(bool expired);
+	
+	void transitionRestart();
+	
 	
 	
 };
