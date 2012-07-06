@@ -1,161 +1,268 @@
-// Chuan-Che Huang & Evan Kerrigan, chuanche@umich.edu
-// Purpose: Test 9 LED strips running together, controlled by 2 Arduinos in master-slave mode.
-// Title: Sin Wave
-
 #include <stdint.h>
 #include <ffft.h>
 #include <NcrcViz.h>
 #include <ledcontroller.h>
-#include <Wire.h>
+#include <avr/pgmspace.h>
 
-
-volatile  byte  position = 0;
-volatile  long  zero = 0;
-
-int16_t capture[FFT_N];			/* Wave captureing buffer */
-complex_t bfly_buff[FFT_N];		/* FFT buffer */
-uint16_t spektrum[FFT_N/2];		/* Spectrum output buffer */
-
-//*****
-
-boolean humanVoiceHasBeenDetected;
-unsigned long timeWhenHumanVoiceIsDetected;
+#define A_MINUTE 10
+#define A_HOUR 10
+// Debug
 boolean debug = DEBUG_FLAG;
-boolean ledAnimationBegin = false;
-unsigned int ledAnimationFrameCounter = 0;
-unsigned int ledAnimationNumOfFrames = 30;
-unsigned int bgAnimationFrameCounter = 0;
-unsigned int bgAnimationNumOfFrames = 100;
-
-//I2C Communication
-char incomingByte = 0;
+//*****
 
 // Using Classes from ledcontroller library
 using LedController::Color; 
 using LedController::LedStrip;
+using LedController::PatternChangingColorColumn;
+using LedController::PatternHourGlass;
+using LedController::PatternBarPlotToBarPlot;
+using LedController::Interval;
 
-Color red(0xFFFF00);
+// Colors Used
+//Color red(0xFF0000);
 Color prettyblue(0x6FBAFC);
-Color dye(0x6F6F10);
+Color oceanicblue(0x00FF80);
+Color skyblue(0x00FFFF);
+//Color dye(0x6F6F10);
+Color algaegreen(0x80FF00);
+Color darkgreen(0x00FF00);
+Color purple1(0x800080);
+Color purple2(0x700075);
+Color purple3(0x600070);
+//Color purple4(0x500075);
 
+// Assign PINs to Led Strips
 LedStrip ledStrips[] = {LedStrip(PIN_LED1_OUT_SDI, PIN_LED1_OUT_CKI),
                        LedStrip(PIN_LED2_OUT_SDI, PIN_LED2_OUT_CKI),
                        LedStrip(PIN_LED3_OUT_SDI, PIN_LED3_OUT_CKI),
                        LedStrip(PIN_LED4_OUT_SDI, PIN_LED4_OUT_CKI),
-                       LedStrip(PIN_LED5_OUT_SDI, PIN_LED5_OUT_CKI),                     
-};
+                       LedStrip(PIN_LED5_OUT_SDI, PIN_LED5_OUT_CKI)};
+
+// Interval for Controller
+byte currentTimeSec = 0;
+byte currentTimeMin = 0;
+
+// Hour Animation States
+#define FIRST_MOVEMENT_INI 0
+#define FIRST_MOVEMENT_UPDATE 1
+#define MID_MOVEMENT_INI 2
+#define MID_MOVEMENT_UPDATE 3
+#define LAST_MOVEMENT_INI 4
+#define LAST_MOVEMENT_UPDATE 5
+#define FINISH 6
+
+// Hour Animation Internal States for Middle Rods
+#define DOWN 0
+#define UP 1
+#define REMAIN 2
+
+// LED strips State
+#define NORMAL 0
+#define HOUR_ANIMATION_DOWN 1
+#define HOUR_ANIMATION_UP 2
+#define HOUR_ANIMATION_REMAIN 3
+
+// Control flags
+bool hourAnimationHasStarted = true;  // Master --> Slave
+byte hourAnimationState = FIRST_MOVEMENT_INI;
+byte hourAnimationToken = NUM_LED_STRIPS_SLAVE -1; //The Token starts from the last led strip
+byte hourAnimationMidMovState = DOWN; //DOWN or UP
+byte ledStripsState[NUM_LED_STRIPS_SLAVE];
+byte tempValueForHourGlass;
+// Pattern Sets
+
+PatternHourGlass patHourGlassesForPastHours[] = {PatternHourGlass(oceanicblue, algaegreen, darkgreen),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen)};
+
+PatternHourGlass tempHourGlass = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
+
+PatternBarPlotToBarPlot patBarPlotsForHourAni[] = {PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen, 1000),
+                                                  PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen, 1000),
+                                                  PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000)};
 
 void setup()
-{
-  //I2C Communication
-  Wire.begin(SLAVE_ADDRESS);
-  Wire.onReceive(receiveEvent);
-  
-  pinMode(PIN_LED1_OUT_SDI, OUTPUT);
-  pinMode(PIN_LED1_OUT_CKI, OUTPUT);
-  pinMode(PIN_LED2_OUT_SDI, OUTPUT);
-  pinMode(PIN_LED2_OUT_CKI, OUTPUT);
-  pinMode(PIN_LED3_OUT_SDI, OUTPUT);
-  pinMode(PIN_LED3_OUT_CKI, OUTPUT);
-  pinMode(PIN_LED4_OUT_SDI, OUTPUT);
-  pinMode(PIN_LED4_OUT_CKI, OUTPUT);
-  pinMode(PIN_LED5_OUT_SDI, OUTPUT);
-  pinMode(PIN_LED5_OUT_CKI, OUTPUT);
-  
-  
+{  
   // Initialize ADC
   Serial.begin(9600);
   
-  
   // Initialize LED strip
   for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
-  ledStrips[i].setup();
-  ledStrips[i].clear();
-  ledStrips[i].send();
+    ledStrips[i].setup();
+    ledStrips[i].clear();
+    ledStrips[i].send();
   }
   
-  delay(2000);
+  // Feed fake data for the hour glasses which stored the human voice information in the past hours
+  for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
+    patHourGlassesForPastHours[i].setActualValueBeingStored(5);
+  }
   
-  //establishContact();  // send a byte to establish contact until Processing respon
+  // Reset barplot
+  patBarPlotsForHourAni[REMAIN].setStartPosition(0);
+  
+  //Serial.println("ProgramStart");
+  Serial.print("freeMemory()=");
+  Serial.println(freeMemory());
+  delay(1000);
 }
 
 void loop()
 {
- 
-    //draw background for master's LED strips
-    for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
+  
+  //*****CONTROLLER & RENDERER BEGIN*************************
+
+
+  /* Render background */
+  // Clear LED strips color
+  for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
       ledStrips[i].clear();
-    }
-    float scale = 0.45 + 0.35*sin( ( float(bgAnimationFrameCounter)/float(bgAnimationNumOfFrames)) * 2*PI + PI/2 );
-    for(byte i=0; i < 32; i++){
-      for(byte j=0; j < NUM_LED_STRIPS_SLAVE; j++){
-        ledStrips[j].getColors()[i].add(prettyblue.scaled(scale));
-      }
-    }  
-    bgAnimationFrameCounter++;
-    if(ledAnimationFrameCounter >= bgAnimationNumOfFrames){
-      bgAnimationFrameCounter = 0;
+  }
+    
+  // Update the sinosoidal background patterns for all the LED strips inherited PatternSineWave class
+  for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
+    patHourGlassesForPastHours[i].updateSine();
+  }
+ 
+  /* finish render background*/
+
+  // 
+  
+  // Hour Animation
+  if(hourAnimationHasStarted){
+    switch(hourAnimationState){
+      case FIRST_MOVEMENT_INI:  //DOWN
+        debug && Serial.println("FIRST_MOVEMENT_INI");
+        patBarPlotsForHourAni[DOWN].setStartPosition(patHourGlassesForPastHours[hourAnimationToken].getIndicator());
+        patBarPlotsForHourAni[DOWN].setEndPosition(0);
+        patBarPlotsForHourAni[DOWN].setBgColor(patHourGlassesForPastHours[hourAnimationToken].getBgColor());
+        patBarPlotsForHourAni[DOWN].setBarColor(patHourGlassesForPastHours[hourAnimationToken].getIndicatorColor());
+        ledStripsState[hourAnimationToken] = HOUR_ANIMATION_DOWN;
+        hourAnimationState = FIRST_MOVEMENT_UPDATE;
+        break;
+      case FIRST_MOVEMENT_UPDATE:  //DOWN
+        debug && Serial.println("FIRST_MOVEMENT_UPDATE");
+        patBarPlotsForHourAni[DOWN].update();
+        debug && Serial.print("isExpired=");
+        debug && Serial.println(patBarPlotsForHourAni[0].isExpired());
+        if(patBarPlotsForHourAni[DOWN].isExpired()){
+        
+          ledStripsState[hourAnimationToken] = REMAIN;
+          hourAnimationState = MID_MOVEMENT_INI;
+          hourAnimationToken--;
+        }
+        //patBarPlotForHourAni.apply(ledStrips[3].getColors());
+        break;
+      case MID_MOVEMENT_INI:
+        if(hourAnimationMidMovState == DOWN){ // Leds go down
+          debug && Serial.println("MID_MOVEMENT_INI DOWN");
+          tempValueForHourGlass = patHourGlassesForPastHours[hourAnimationToken].getActualValueBeingStored();
+          ledStripsState[hourAnimationToken] = HOUR_ANIMATION_DOWN;
+          patBarPlotsForHourAni[DOWN].restart();
+          patBarPlotsForHourAni[DOWN].setStartPosition(patHourGlassesForPastHours[hourAnimationToken].getIndicator());
+          patBarPlotsForHourAni[DOWN].setEndPosition(0);
+          patBarPlotsForHourAni[DOWN].setBgColor(patHourGlassesForPastHours[hourAnimationToken].getBgColor());
+          patBarPlotsForHourAni[DOWN].setBarColor(patHourGlassesForPastHours[hourAnimationToken].getIndicatorColor());
+          
+          hourAnimationState = MID_MOVEMENT_UPDATE;
+        } else { // LEDS go up
+          debug && Serial.println("MID_MOVEMENT_INI UP");
+          ledStripsState[hourAnimationToken] = HOUR_ANIMATION_UP;
+          patBarPlotsForHourAni[UP].restart();
+          patBarPlotsForHourAni[UP].setStartPosition(0);
+          patBarPlotsForHourAni[UP].setEndPosition(tempValueForHourGlass);
+          patBarPlotsForHourAni[UP].setBgColor(patHourGlassesForPastHours[hourAnimationToken].getBgColor());
+          patBarPlotsForHourAni[UP].setBarColor(patHourGlassesForPastHours[hourAnimationToken].getIndicatorColor());
+          
+          hourAnimationState = MID_MOVEMENT_UPDATE;
+        }
+        break;
+      case MID_MOVEMENT_UPDATE:
+        debug && Serial.println("MID_MOVEMENT_UPDATE");
+        bool isExpired;
+        if(hourAnimationMidMovState == DOWN){
+          patBarPlotsForHourAni[DOWN].update();
+          isExpired = patBarPlotsForHourAni[DOWN].isExpired();
+        }
+        else {
+          patBarPlotsForHourAni[UP].update();
+          isExpired = patBarPlotsForHourAni[UP].isExpired();
+        }
+        
+        if(isExpired){
+          if(/*NEED TO MOVE TO NEXT ROD && NEXT ROD = LAST ONE*/ hourAnimationMidMovState == UP && hourAnimationToken ==  1)
+          {
+            debug && Serial.println("GO LAST ROUND");
+            
+          } else if(/*FROM DOWN TO UP*/ hourAnimationMidMovState == DOWN){
+            debug && Serial.println("GO FROM DOWN TO UP");
+            
+            //State Transition Tasks
+            ledStripsState[hourAnimationToken] = HOUR_ANIMATION_REMAIN;
+            hourAnimationState = MID_MOVEMENT_INI;
+            hourAnimationMidMovState = UP;
+            hourAnimationToken++;
+            
+          } else if(/*NEED TO MOVE TO NEXT ROD*/ hourAnimationMidMovState == UP){
+              debug && Serial.println("GO NEXT ROUND");
+            
+            
+              // State Transition Task
+              hourAnimationState = MID_MOVEMENT_INI;
+              hourAnimationMidMovState = DOWN;
+              // Change the current rod back to hourglass
+              ledStripsState[hourAnimationToken] = NORMAL;
+              
+              patHourGlassesForPastHours[hourAnimationToken].setActualValueBeingStored(tempValueForHourGlass);
+              hourAnimationToken -= 2;
+          }
+          
+        }
+        break;
+        
     }
     
-    if(humanVoiceHasBeenDetected == true){
-        unsigned long now = millis();
-        if(now - timeWhenHumanVoiceIsDetected > 3000){
-          humanVoiceHasBeenDetected = false;
-        }
-     } 
-   
-  /* Renderer's Code Begin */   
-  if(ledAnimationBegin == true){
-      for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
-        ledStrips[i].clear();
-      }
-      float scale = 0.45 + 0.35*sin( ( float(ledAnimationFrameCounter)/float(ledAnimationNumOfFrames)) * 2*PI + PI/2 );
-      for(byte i=0; i < 32; i++){
-        for(byte j=0; j < NUM_LED_STRIPS_SLAVE; j++){
-          if(i % 5 == 0){
-            ledStrips[j].getColors()[i].setCombinedValue(0x106F10);
-          } else { 
-            ledStrips[j].getColors()[i].add(red.scaled(scale));
-          }
-        }
-      }
-      
-      ledAnimationFrameCounter++;
-      if(ledAnimationFrameCounter >= ledAnimationNumOfFrames){
-        ledAnimationBegin = false;
-        ledAnimationFrameCounter = 0;
-      }
-      
+  } else {
+  
+  }
+  
+  // Put all the updated Colors onto the LED strips
+  for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
+    switch(ledStripsState[i]){
+      case NORMAL:
+        patHourGlassesForPastHours[i].apply(ledStrips[i].getColors());
+        break;
+      case HOUR_ANIMATION_UP:
+        patBarPlotsForHourAni[UP].apply(ledStrips[i].getColors());
+        break;
+      case HOUR_ANIMATION_DOWN:
+        patBarPlotsForHourAni[DOWN].apply(ledStrips[i].getColors());
+        break;
+      case HOUR_ANIMATION_REMAIN:
+        patBarPlotsForHourAni[REMAIN].apply(ledStrips[i].getColors());
+        break;        
+      default:
+        patHourGlassesForPastHours[i].apply(ledStrips[i].getColors());
+        break;
+    }
+    
   }
   
   for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){  
     ledStrips[i].send();
   }
-  
 
 }
 
-//I2C Communication, receive event from master
-void receiveEvent(int numBytes) //should take a single int parameter (the number of bytes read from master
-{
-  while (Wire.available()){
-    incomingByte = Wire.read();
-    if(incomingByte == EVENT_DETECT_HUMAN_VOICE){
-      if(humanVoiceHasBeenDetected == true){
-  
-      } else {
-          humanVoiceHasBeenDetected = true;
-          timeWhenHumanVoiceIsDetected = millis();
-        
-          if(ledAnimationBegin == false){
-          ledAnimationBegin = true;
-        }
-      }
-      
-      
-    }
+
+/* Facility Functions Begin */
+void establishContact() {
+ while (Serial.available() <= 0) {
+      Serial.write('A');   // send a capital A
+      delay(300);
   }
-  
 }
-
 

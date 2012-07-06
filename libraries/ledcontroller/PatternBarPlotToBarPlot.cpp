@@ -33,6 +33,7 @@ PatternBarPlotToBarPlot::PatternBarPlotToBarPlot(byte startPosition, byte endPos
 	if(diff == 0){
 		diff = 1;
 	}
+	this->milliSecForMoveInterval = milliSecForMoveInterval;
 	unsigned long eachActionTimeInMilliSec = milliSecForMoveInterval/diff;
 	eachActionInterval.setInterval(eachActionTimeInMilliSec);
 
@@ -46,6 +47,7 @@ void PatternBarPlotToBarPlot::restart()
 {
 	expired = false;
 	currentPosition = startPosition;
+	
 	eachActionInterval.clearExpired();
 }
 
@@ -120,6 +122,14 @@ void PatternBarPlotToBarPlot::setExpired(bool expired)
 
 void PatternBarPlotToBarPlot::setStartPosition(byte position){
 	this->startPosition = position;
+	increment = (startPosition > endPosition) ? -1: 1;
+	currentPosition = startPosition;
+	byte diff = abs(endPosition-startPosition);
+	if(diff == 0){
+		diff = 1;
+	}
+	unsigned long eachActionTimeInMilliSec = milliSecForMoveInterval/diff;
+	eachActionInterval.setInterval(eachActionTimeInMilliSec);
 }
 byte PatternBarPlotToBarPlot::getStartPosition(){
 	return startPosition;
@@ -127,6 +137,13 @@ byte PatternBarPlotToBarPlot::getStartPosition(){
 
 void PatternBarPlotToBarPlot::setEndPosition(byte position){
 	this->endPosition = position;
+	increment = (startPosition > endPosition) ? -1: 1;
+	byte diff = abs(endPosition-startPosition);
+	if(diff == 0){
+		diff = 1;
+	}
+	unsigned long eachActionTimeInMilliSec = milliSecForMoveInterval/diff;
+	eachActionInterval.setInterval(eachActionTimeInMilliSec);
 }
 byte PatternBarPlotToBarPlot::getEndPosition(){
 	return endPosition;

@@ -21,6 +21,7 @@ private:
 	byte startPosition;
 	byte endPosition;
 	Interval eachActionInterval;
+	unsigned long milliSecForMoveInterval;
 	byte currentPosition;
 	bool reverse;
 	bool expired;

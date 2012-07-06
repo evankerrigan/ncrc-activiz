@@ -80,8 +80,7 @@ PatternChangingColorColumn patCCC = PatternChangingColorColumn(purple1); //Patte
 
 PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, skyblue);
 PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
-////PatternHourGlass patHourGlassForTest = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
-PatternHourGlass patHourGlassesForPastHour = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
+PatternHourGlass patHourGlassForPastHour = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
 
 PatternBarPlotToBarPlot patBarPlotForHourAni = PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen, 1000);
 
@@ -109,8 +108,7 @@ void setup()
   
   
   // Feed fake data for the hour glasses which stored the human voice information in the past hours
-  //patHourGlassesForPastHours[0].setActualValueBeingStored(5);
-  //patHourGlassesForPastHours[1].setActualValueBeingStored(6);
+  patHourGlassForPastHour.setActualValueBeingStored(5);
   //Serial.println("ProgramStart");
   Serial.print("freeMemory()=");
   Serial.println(freeMemory());
@@ -190,9 +188,8 @@ void loop()
   // Update the sinosoidal background patterns for all the LED strips inherited PatternSineWave class
     patCCC.updateSine();
     patHourGlassForSec.updateSine();
-    //patHourGlassForMin.updateSine();
-    //patHourGlassesForPastHours[0].updateSine();  
-    //patHourGlassesForPastHours[1].updateSine();
+    patHourGlassForMin.updateSine();
+    patHourGlassForPastHour.updateSine();  
   /* finish render background*/
 
   // 
@@ -238,8 +235,8 @@ void loop()
   // Put all the updated Colors onto the LED strips
   patCCC.apply(ledStrips[0].getColors());
   patHourGlassForSec.apply(ledStrips[1].getColors());
-  //patHourGlassForMin.apply(ledStrips[2].getColors());
-  //patHourGlassesForPastHours[0].apply(ledStrips[3].getColors());
+  patHourGlassForMin.apply(ledStrips[2].getColors());
+  patHourGlassForPastHour.apply(ledStrips[3].getColors());
   //patHourGlassesForPastHours[1].apply(ledStrips[4].getColors());
   
   for(byte i=0; i < NUM_LED_STRIPS; i++){  
