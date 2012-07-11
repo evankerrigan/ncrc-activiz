@@ -80,9 +80,9 @@ PatternHourGlass patHourGlassesForPastHours[] = {PatternHourGlass(oceanicblue, a
 
 PatternHourGlass tempHourGlass = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
 
-PatternBarPlotToBarPlot patBarPlotsForHourAni[] = {PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen, 1000),
-                                                  PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen, 1000),
-                                                  PatternBarPlotToBarPlot(0, 30, oceanicblue, algaegreen, 1000)};
+PatternBarPlotToBarPlot patBarPlotsForHourAni[] = {PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen),
+                                                  PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen),
+                                                  PatternBarPlotToBarPlot(0, 0, oceanicblue, algaegreen)};
 
 void setup()
 {  
@@ -150,7 +150,7 @@ void loop()
         debug && Serial.println(patBarPlotsForHourAni[0].isExpired());
         if(patBarPlotsForHourAni[DOWN].isExpired()){
         
-          ledStripsState[hourAnimationToken] = REMAIN;
+          ledStripsState[hourAnimationToken] = HOUR_ANIMATION_REMAIN;
           hourAnimationState = MID_MOVEMENT_INI;
           hourAnimationToken--;
         }
@@ -183,16 +183,16 @@ void loop()
       case MID_MOVEMENT_UPDATE:
         debug && Serial.println("MID_MOVEMENT_UPDATE");
         bool isExpired;
-        if(hourAnimationMidMovState == DOWN){
+        if(hourAnimationMidMovState == DOWN){  // LED Go DOWN
           patBarPlotsForHourAni[DOWN].update();
           isExpired = patBarPlotsForHourAni[DOWN].isExpired();
         }
-        else {
+        else { // LED GO UP
           patBarPlotsForHourAni[UP].update();
           isExpired = patBarPlotsForHourAni[UP].isExpired();
         }
         
-        if(isExpired){
+        if(isExpired){ // LED Go UP
           if(/*NEED TO MOVE TO NEXT ROD && NEXT ROD = LAST ONE*/ hourAnimationMidMovState == UP && hourAnimationToken ==  1)
           {
             debug && Serial.println("GO LAST ROUND");
