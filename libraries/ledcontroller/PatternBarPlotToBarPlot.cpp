@@ -21,7 +21,7 @@
 LED_CONTROLLER_NAMESPACE_USING
 
 PatternBarPlotToBarPlot::PatternBarPlotToBarPlot(byte startPosition, byte endPosition, 
-	const Color& bgColor, const Color& barColor, unsigned long milliSecForMoveInterval)
+	const Color& bgColor, const Color& barColor)
 	:PatternSineWave(bgColor), eachActionInterval(DEFAULT_ACTION_INTERVAL)
 {
 	this->bgColor = bgColor;
@@ -29,14 +29,6 @@ PatternBarPlotToBarPlot::PatternBarPlotToBarPlot(byte startPosition, byte endPos
 	this->startPosition = startPosition;
 	this->endPosition = endPosition;
 	this->expired = false;
-	byte diff = abs(endPosition-startPosition);
-	if(diff == 0){
-		diff = 1;
-	}
-	this->milliSecForMoveInterval = milliSecForMoveInterval;
-	unsigned long eachActionTimeInMilliSec = milliSecForMoveInterval/diff;
-	eachActionInterval.setInterval(eachActionTimeInMilliSec);
-
 	reverse = false;
 	increment = (startPosition > endPosition) ? -1: 1;
 	currentPosition = startPosition;
@@ -124,12 +116,6 @@ void PatternBarPlotToBarPlot::setStartPosition(byte position){
 	this->startPosition = position;
 	increment = (startPosition > endPosition) ? -1: 1;
 	currentPosition = startPosition;
-	byte diff = abs(endPosition-startPosition);
-	if(diff == 0){
-		diff = 1;
-	}
-	unsigned long eachActionTimeInMilliSec = milliSecForMoveInterval/diff;
-	eachActionInterval.setInterval(eachActionTimeInMilliSec);
 }
 byte PatternBarPlotToBarPlot::getStartPosition(){
 	return startPosition;
@@ -138,12 +124,6 @@ byte PatternBarPlotToBarPlot::getStartPosition(){
 void PatternBarPlotToBarPlot::setEndPosition(byte position){
 	this->endPosition = position;
 	increment = (startPosition > endPosition) ? -1: 1;
-	byte diff = abs(endPosition-startPosition);
-	if(diff == 0){
-		diff = 1;
-	}
-	unsigned long eachActionTimeInMilliSec = milliSecForMoveInterval/diff;
-	eachActionInterval.setInterval(eachActionTimeInMilliSec);
 }
 byte PatternBarPlotToBarPlot::getEndPosition(){
 	return endPosition;

@@ -27,7 +27,7 @@ PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, co
 	maxValueCanBePresentedOnHourGlass = 30;
 	reverse = false;
 	currentColorIndex = 0;
-	indicatorUnit = 4;
+	indicatorUnit = 1;
 	colors[0] = color1;
 	colors[1] = color2;
 	restart();

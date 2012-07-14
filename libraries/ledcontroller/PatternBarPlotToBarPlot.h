@@ -37,7 +37,7 @@ public:
 	*	moveInterval it has.
 	*/
 	PatternBarPlotToBarPlot(byte startPosition, byte endPosition, 
-		const Color& bgColor, const Color& barColor, unsigned long milliSecForMoveInterval);
+		const Color& bgColor, const Color& barColor);
 		
 	/**
 	*	@return whether a single action is being performed
