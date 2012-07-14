@@ -1,65 +1,91 @@
-// Chuan-Che Huang & Evan Kerrigan, chuanche@umich.edu
-// Purpose: Test 9 LED strips running together, controlled by 2 Arduinos in master-slave mode.
-// Title: Sin Wave
-
 #include <stdint.h>
 #include <ffft.h>
 #include <NcrcViz.h>
 #include <ledcontroller.h>
-#include <Wire.h>
+#include <avr/pgmspace.h>
 
+#define IR_AUDIO  0 // ADC channel to capture
+#define A_MINUTE 10
+#define A_HOUR 10
+// Debug
+boolean debug = DEBUG_FLAG;
+//*****
+
+// For Analog to Digital Converter
 volatile  byte  position = 0;
 volatile  long  zero = 0;
 
 int16_t capture[FFT_N];			/* Wave captureing buffer */
 complex_t bfly_buff[FFT_N];		/* FFT buffer */
 uint16_t spektrum[FFT_N/2];		/* Spectrum output buffer */
+//*****
 
 //*****
 SoundHandler soundHandler = SoundHandler();
 boolean humanVoiceHasBeenDetected;
-unsigned long timeWhenHumanVoiceIsDetected;
-boolean debug = DEBUG_FLAG;
-boolean ledAnimationBegin = false;
-unsigned int ledAnimationFrameCounter = 0;
-unsigned int ledAnimationNumOfFrames = 30;
-unsigned int bgAnimationFrameCounter = 0;
-unsigned int bgAnimationNumOfFrames = 100;
-
-//I2C Communication
-char incomingByte = 0;
 
 // Using Classes from ledcontroller library
 using LedController::Color; 
 using LedController::LedStrip;
+using LedController::PatternChangingColorColumn;
+using LedController::PatternHourGlass;
+using LedController::PatternBarPlotToBarPlot;
+using LedController::Interval;
 
-Color red(0xFFFF00);
+// Colors Used
+//Color red(0xFF0000);
 Color prettyblue(0x6FBAFC);
-Color dye(0x6F6F10);
+Color oceanicblue(0x00FF80);
+Color skyblue(0x00FFFF);
+//Color dye(0x6F6F10);
+Color algaegreen(0x80FF00);
+Color darkgreen(0x00FF00);
+Color purple1(0x800080);
+Color purple2(0x700075);
+Color purple3(0x600070);
+//Color purple4(0x500075);
 
+// Assign PINs to Led Strips
 LedStrip ledStrips[] = {LedStrip(PIN_LED1_OUT_SDI, PIN_LED1_OUT_CKI),
                        LedStrip(PIN_LED2_OUT_SDI, PIN_LED2_OUT_CKI),
                        LedStrip(PIN_LED3_OUT_SDI, PIN_LED3_OUT_CKI),
-                       LedStrip(PIN_LED4_OUT_SDI, PIN_LED4_OUT_CKI),
-                       LedStrip(PIN_LED5_OUT_SDI, PIN_LED5_OUT_CKI),                     
-};
+                       LedStrip(PIN_LED4_OUT_SDI, PIN_LED4_OUT_CKI)};
+
+// Interval for Controller
+Interval oneSec = Interval(1000);
+byte currentTimeSec = 0;
+byte currentTimeMin = 0;
+
+// Hour Animation States
+#define FIRST_MOVEMENT_INI 0
+#define FIRST_MOVEMENT_UPDATE 1
+#define MID_MOVEMENT_INI 2
+#define MID_MOVEMENT_UPDATE 3
+#define LAST_MOVEMENT_INI 4
+#define LAST_MOVEMENT_UPDATE 5
+#define FINISH 6
+
+// Hour Animation Internal States for Middle Rods
+#define DOWN 0
+#define UP 1
+
+
+// Control flags
+bool hourAnimationHasStarted = true;
+bool hourAnimationState = FIRST_MOVEMENT_INI;
+byte hourAnimationMidMovState = DOWN; //DOWN or UP
+
+// Pattern Sets
+PatternChangingColorColumn patCCC = PatternChangingColorColumn(purple1); //Pattern for Led strip 1
+
+PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, skyblue);
+PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
+PatternHourGlass patHourGlassForPastHour = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
+
+PatternBarPlotToBarPlot patBarPlotForHourAni = PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen, 1000);
 
 void setup()
-{
-  //I2C Communication
-  Wire.begin();
-  
-  pinMode(PIN_LED1_OUT_SDI, OUTPUT);
-  pinMode(PIN_LED1_OUT_CKI, OUTPUT);
-  pinMode(PIN_LED2_OUT_SDI, OUTPUT);
-  pinMode(PIN_LED2_OUT_CKI, OUTPUT);
-  pinMode(PIN_LED3_OUT_SDI, OUTPUT);
-  pinMode(PIN_LED3_OUT_CKI, OUTPUT);
-  pinMode(PIN_LED4_OUT_SDI, OUTPUT);
-  pinMode(PIN_LED4_OUT_CKI, OUTPUT);
-  pinMode(PIN_LED5_OUT_SDI, OUTPUT);
-  pinMode(PIN_LED5_OUT_CKI, OUTPUT);
-  
+{  
   pinMode(PIN_IR_IN, INPUT);
   pinMode(PIN_MIC_IN, INPUT);
   
@@ -69,116 +95,153 @@ void setup()
   adcCalb();
   
   // Initialize LED strip
-  for(byte i=0; i < NUM_LED_STRIPS_MASTER; i++){
-  ledStrips[i].setup();
-  ledStrips[i].clear();
-  ledStrips[i].send();
+  for(byte i=0; i < NUM_LED_STRIPS; i++){
+    ledStrips[i].setup();
+    ledStrips[i].clear();
+    ledStrips[i].send();
   }
   
-  delay(2000);
+  // Initialize Patterns
+  patCCC.addColor(purple2);
+  patCCC.addColor(purple3);
+  patCCC.addColor(purple3);
   
-  //establishContact();  // send a byte to establish contact until Processing respon
+  
+  // Feed fake data for the hour glasses which stored the human voice information in the past hours
+  patHourGlassForPastHour.setActualValueBeingStored(5);
+  //Serial.println("ProgramStart");
+  Serial.print("freeMemory()=");
+  Serial.println(freeMemory());
+  delay(1000);
 }
 
 void loop()
 {
- 
-  
   
   if (position == FFT_N)
   {
-    
-    //draw background for master's LED strips
-    for(byte i=0; i < NUM_LED_STRIPS_MASTER; i++){
-      ledStrips[i].clear();
-    }
-    float scale = 0.45 + 0.35*sin( ( float(bgAnimationFrameCounter)/float(bgAnimationNumOfFrames)) * 2*PI + PI/2 );
-    for(byte i=0; i < 32; i++){
-      for(byte j=0; j < NUM_LED_STRIPS_MASTER; j++){
-        ledStrips[j].getColors()[i].add(prettyblue.scaled(scale));
-      }
-    }  
-    bgAnimationFrameCounter++;
-    if(ledAnimationFrameCounter >= bgAnimationNumOfFrames){
-      bgAnimationFrameCounter = 0;
-    }
-    
+    //Serial.print(1);  
     /* Audio Signal Processor Begin*/
     // 1. FFT    
     fft_input(capture, bfly_buff);
     fft_execute(bfly_buff);
     fft_output(bfly_buff, spektrum);
-
-//    debug && Serial.println("Raw spectrum");
-//    for(byte i = 0; i < 20; i++){
-//      Serial.println(spektrum[i]);
-//    }
-    
-//    Serial.println("--end--");
     
     // 2. Audio Recognizer
     boolean detectHumanVoice = soundHandler.containHumanVoice(spektrum, 64);
-    
-    
-    // 3. State Machine Code, Also a Central Controller 
-    // Controller should set different rendering flag in order to run different 
-    // led animations.
     if(detectHumanVoice == true){
-//      debug && Serial.println("**********************HUMAN VOICE***************");
+      /** Set humanVoiceHasBeenDetected to TRUE
+       *       ____   ________   <--- humanVoiceHasBeenDetected will be set to TRUE for the while one second period.
+       *       |  |   |      |
+       * _0sec_|1 |2__|3  4  |5__
+      **/
       if(humanVoiceHasBeenDetected == true){
-        //...
+        if(oneSec.update()){
+          humanVoiceHasBeenDetected = false;
+        }
       } else {
-        // Send signal to slave to activate the LED
-        sendEventToSlave(EVENT_DETECT_HUMAN_VOICE);
-        
-        // Change the control flag and begin render the special animation
-        humanVoiceHasBeenDetected = true;
-        timeWhenHumanVoiceIsDetected = millis();
-        
-        if(ledAnimationBegin == false){
-          ledAnimationBegin = true;
-        }
-      }
-  
-    }
-    if(humanVoiceHasBeenDetected == true){
-      unsigned long now = millis();
-      if(now - timeWhenHumanVoiceIsDetected > 3000){
-        humanVoiceHasBeenDetected = false;
-      }
-    } 
-   
-   
-  /* Renderer's Code Begin */   
-  if(ledAnimationBegin == true){
-      for(byte i=0; i < NUM_LED_STRIPS_MASTER; i++){
-        ledStrips[i].clear();
-      }
-      float scale = 0.45 + 0.35*sin( ( float(ledAnimationFrameCounter)/float(ledAnimationNumOfFrames)) * 2*PI + PI/2 );
-      for(byte i=0; i < 32; i++){
-        for(byte j=0; j < NUM_LED_STRIPS_MASTER; j++){
-          if(i % 5 == 0){
-            ledStrips[j].getColors()[i].setCombinedValue(0x106F10);
-          } else { 
-            ledStrips[j].getColors()[i].add(red.scaled(scale));
+          // First time detect voice within current one second
+          humanVoiceHasBeenDetected = true;
+          
+          /** Should put all the Pattern updates which will only happened *one* time
+          *   in each second here.
+          *   For example, if you only want to update a Pattern one time when voices is detected in current 
+          *   one second, you should put the update code here.
+          **/
+          patHourGlassForSec.update();
+          
+          byte timeStoredInHourGlassForSec = patHourGlassForSec.getActualValueBeingStored();
+          if(timeStoredInHourGlassForSec == A_MINUTE - 1){
+            //patHourGlassForMin.update();
+            patHourGlassForSec.restart();
           }
-        }
+          
       }
       
-      ledAnimationFrameCounter++;
-      if(ledAnimationFrameCounter >= ledAnimationNumOfFrames){
-        ledAnimationBegin = false;
-        ledAnimationFrameCounter = 0;
-      }
-      
-  }
-  
-  for(byte i=0; i < NUM_LED_STRIPS_MASTER; i++){  
-    ledStrips[i].send();
-  }
-  
+    }
+    
    position = 0;
   }//end position==FFT_N
+ 
+  //*****CONTROLLER & RENDERER BEGIN*************************
+
+  // Every second do ...
+  if(oneSec.update()){
+    humanVoiceHasBeenDetected = false;
+//    currentTimeSec++;
+//    if(currentTimeSec >= A_MINUTE){
+//      currentTimeSec = 0;
+//      currentTimeMin++;
+//      if(currentTimeMin >= A_HOUR){
+//        hourAnimationHasStarted = true;
+//      }
+//    }
+    oneSec.clearExpired();
+  }
+
+  /* Render background */
+  // Clear LED strips color
+    for(byte i=0; i < NUM_LED_STRIPS; i++){
+      ledStrips[i].clear();
+    }
+    
+  // Update the sinosoidal background patterns for all the LED strips inherited PatternSineWave class
+    patCCC.updateSine();
+    patHourGlassForSec.updateSine();
+    patHourGlassForMin.updateSine();
+    patHourGlassForPastHour.updateSine();  
+  /* finish render background*/
+
+  // 
+  if(humanVoiceHasBeenDetected == true){
+    // Continusly update within the current one second if human voice has been detected
+    // Put all the code that needs to continusly update somethings within the current when human voice
+    // is detected to here.
+    patCCC.update();
+  }
+  
+  // Hour Animation
+//  if(hourAnimationHasStarted){
+//    switch(hourAnimationState){
+//      case FIRST_MOVEMENT_INI:
+//        patBarPlotForHourAni.setStartPosition(patHourGlassesForPastHours[0].getIndicator());
+//        patBarPlotForHourAni.setEndPosition(0);
+//        patBarPlotForHourAni.setBgColor(patHourGlassesForPastHours[0].getBgColor());
+//        patBarPlotForHourAni.setBarColor(patHourGlassesForPastHours[0].getIndicatorColor());
+//        hourAnimationState = FIRST_MOVEMENT_UPDATE;
+//        break;
+//      case FIRST_MOVEMENT_UPDATE:
+//        patBarPlotForHourAni.update();
+//        if(patBarPlotForHourAni.isExpired()){
+//          hourAnimationState = MID_MOVEMENT_INI;
+//          
+//        }
+//        //patBarPlotForHourAni.apply(ledStrips[3].getColors());
+//        break;
+//      case MID_MOVEMENT_INI:
+//        if(true){ // A placeholder here, if the current rod hasn't finished it's animation, keep update it, 
+//                  // otherwise, update the second middle rods
+//        
+//        } else {
+//        
+//        }
+//        
+//    }
+//    
+//  } else {
+//    
+//  }
+  
+  // Put all the updated Colors onto the LED strips
+  patCCC.apply(ledStrips[0].getColors());
+  patHourGlassForSec.apply(ledStrips[1].getColors());
+  patHourGlassForMin.apply(ledStrips[2].getColors());
+  patHourGlassForPastHour.apply(ledStrips[3].getColors());
+  //patHourGlassesForPastHours[1].apply(ledStrips[4].getColors());
+  
+  for(byte i=0; i < NUM_LED_STRIPS; i++){  
+    ledStrips[i].send();
+  }
 
 }
 
@@ -212,7 +275,7 @@ void adcInit(){
   sei();
 }
 void adcCalb(){
-  Serial.println("Start to calc zero");
+  //Serial.println("Start to calc zero");
   long midl = 0;
   // get 2 meashurment at 2 sec
   // on ADC input must be NO SIGNAL!!!
@@ -224,14 +287,5 @@ void adcCalb(){
     delay(900);
   }
   zero = -midl/2;
-  Serial.println("Done.");
+  //Serial.println("Done.");
 }
-
-//I2C Communication
-void sendEventToSlave(byte event)
-{
-  Wire.beginTransmission(SLAVE_ADDRESS);
-  Wire.write(event);
-  Wire.endTransmission();
-}
-
