@@ -20,6 +20,22 @@
 #define DEFAULT_TRANSITION_TIME 2000
 LED_CONTROLLER_NAMESPACE_USING
 
+PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, const Color& color2, bool allowTransition)
+:PatternSineWave(bgColor), transitionEachActionInterval(DEFAULT_TRANSITION_TIME)
+{
+	this->bgColor = bgColor;
+	maxValueCanBePresentedOnHourGlass = 30;
+	reverse = false;
+	currentColorIndex = 0;
+	indicatorUnit = 1;
+	colors[0] = color1;
+	colors[1] = color2;
+	indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
+	indicator *= indicatorUnit;
+	this->allowTransition = allowTransition;
+	restart();
+}
+
 PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, const Color& color2)
 :PatternSineWave(bgColor), transitionEachActionInterval(DEFAULT_TRANSITION_TIME)
 {
@@ -30,12 +46,16 @@ PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, co
 	indicatorUnit = 1;
 	colors[0] = color1;
 	colors[1] = color2;
+	indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
+	indicator *= indicatorUnit;
+	this->allowTransition = true;
 	restart();
 }
 
+
+
 void PatternHourGlass::restart()
 {
-	indicator = 0;
 	actualValueBeingStored = 0;
 	currentColorIndex = 0;
 }
@@ -60,7 +80,7 @@ void PatternHourGlass::advance()
 		// and the indicator will go down to zero
 		// To make it looks more organic, and pretty, add PatternBarPlotToBarPlot
 		// Also, should lock the indicator when we are in transition state
-		inTransition = true;
+		inTransition = (allowTransition & true);
 		transitionColorIndex = tempColorIndex;
 		iniTransition();
 		
@@ -149,6 +169,13 @@ void PatternHourGlass::setActualValueBeingStored(byte value)
 {
 	actualValueBeingStored = value-1; // actualValueBeingStored will be added 1 when update,  
 									  // so we store value-1 here, it is a tricky thing.
+	
+	// Change the value stored will influence the indicator and indicator color
+	indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
+	indicator *= indicatorUnit;
+	byte tempColorIndex = currentColorIndex;
+	currentColorIndex = (actualValueBeingStored / (maxValueCanBePresentedOnHourGlass/indicatorUnit)) % DEFAULT_MAX_COLORS;
+	
 	update();
 }
 

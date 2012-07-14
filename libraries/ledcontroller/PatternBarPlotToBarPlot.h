@@ -77,6 +77,7 @@ public:
 	void setBarColor(const Color& barColor);
 	Color getBarColor();
 	
+	
 };
 
 LED_CONTROLLER_NAMESPACE_EXIT

@@ -38,6 +38,7 @@ private:
 	Color colors[DEFAULT_MAX_COLORS];
 	byte currentColorIndex;
 	bool inTransition;
+	bool allowTransition;
 
 private: //Variables for Embedded PatternBarPlotToBarPlot
 	byte transitionStartPosition;
@@ -61,8 +62,8 @@ public:
 	/**
 	*	Create a new Hour Glass Pattern
 	*/
+	PatternHourGlass(const Color& bgColor, const Color& color1, const Color& color2, bool allowTransition);
 	PatternHourGlass(const Color& bgColor, const Color& color1, const Color& color2);
-	
 	/**
 	*	Update the indicator.
 	*	@return success or not

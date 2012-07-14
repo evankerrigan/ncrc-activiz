@@ -3,12 +3,19 @@
 #include <NcrcViz.h>
 #include <ledcontroller.h>
 #include <avr/pgmspace.h>
+#include <Wire.h>
 
 #define A_MINUTE 10
 #define A_HOUR 10
 // Debug
 boolean debug = DEBUG_FLAG;
 //*****
+
+// Master and Slave Protocal
+//const int SLAVE_ADDRESS = 1;
+//#define EVENT_HA_START 0  //HA = Hour Animation
+//#define EVENT_HA_LAST 1
+
 
 // Using Classes from ledcontroller library
 using LedController::Color; 
@@ -71,18 +78,23 @@ byte ledStripsState[NUM_LED_STRIPS_SLAVE];
 byte tempValueForHourGlass;
 // Pattern Sets
 
-PatternHourGlass patHourGlassesForPastHours[] = {PatternHourGlass(oceanicblue, algaegreen, darkgreen),
-                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen),
-                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen),
-                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen),
-                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen),
-                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen)};
+PatternHourGlass patHourGlassesForPastHours[] = {PatternHourGlass(oceanicblue, algaegreen, darkgreen, false),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen, false),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen, false),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen, false),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen, false),
+                                                 PatternHourGlass(oceanicblue, algaegreen, darkgreen, false)};
 
-PatternHourGlass tempHourGlass = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
+PatternHourGlass tempHourGlass = PatternHourGlass(oceanicblue, algaegreen, darkgreen, false);
 
 PatternBarPlotToBarPlot patBarPlotsForHourAni[] = {PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen),
                                                   PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen),
                                                   PatternBarPlotToBarPlot(0, 0, oceanicblue, algaegreen)};
+
+// Temp Value
+byte tempIndicator = 0;
+Color tempBgColor;
+Color tempBarColor;
 
 void setup()
 {  
@@ -98,7 +110,7 @@ void setup()
   
   // Feed fake data for the hour glasses which stored the human voice information in the past hours
   for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
-    patHourGlassesForPastHours[i].setActualValueBeingStored(5);
+    patHourGlassesForPastHours[i].setActualValueBeingStored(random(20)+20);
   }
   
   // Reset barplot
@@ -136,6 +148,8 @@ void loop()
     switch(hourAnimationState){
       case FIRST_MOVEMENT_INI:  //DOWN
         debug && Serial.println("FIRST_MOVEMENT_INI");
+        debug && Serial.print(" indicator = ");
+        debug && Serial.println(patHourGlassesForPastHours[hourAnimationToken].getIndicator());
         patBarPlotsForHourAni[DOWN].setStartPosition(patHourGlassesForPastHours[hourAnimationToken].getIndicator());
         patBarPlotsForHourAni[DOWN].setEndPosition(0);
         patBarPlotsForHourAni[DOWN].setBgColor(patHourGlassesForPastHours[hourAnimationToken].getBgColor());
@@ -145,6 +159,7 @@ void loop()
         break;
       case FIRST_MOVEMENT_UPDATE:  //DOWN
         debug && Serial.println("FIRST_MOVEMENT_UPDATE");
+        debug && Serial.print(hourAnimationToken);
         patBarPlotsForHourAni[DOWN].update();
         debug && Serial.print("isExpired=");
         debug && Serial.println(patBarPlotsForHourAni[0].isExpired());
@@ -159,29 +174,40 @@ void loop()
       case MID_MOVEMENT_INI:
         if(hourAnimationMidMovState == DOWN){ // Leds go down
           debug && Serial.println("MID_MOVEMENT_INI DOWN");
+          debug && Serial.print(hourAnimationToken);
+
           tempValueForHourGlass = patHourGlassesForPastHours[hourAnimationToken].getActualValueBeingStored();
+          
+          debug && Serial.print("tempValue = ");
+          debug && Serial.println(tempValueForHourGlass);
+          
+          tempIndicator = patHourGlassesForPastHours[hourAnimationToken].getIndicator();
+          tempBgColor = patHourGlassesForPastHours[hourAnimationToken].getBgColor();
+          tempBarColor =  patHourGlassesForPastHours[hourAnimationToken].getIndicatorColor();
           ledStripsState[hourAnimationToken] = HOUR_ANIMATION_DOWN;
           patBarPlotsForHourAni[DOWN].restart();
-          patBarPlotsForHourAni[DOWN].setStartPosition(patHourGlassesForPastHours[hourAnimationToken].getIndicator());
+          patBarPlotsForHourAni[DOWN].setStartPosition(tempIndicator);
           patBarPlotsForHourAni[DOWN].setEndPosition(0);
-          patBarPlotsForHourAni[DOWN].setBgColor(patHourGlassesForPastHours[hourAnimationToken].getBgColor());
-          patBarPlotsForHourAni[DOWN].setBarColor(patHourGlassesForPastHours[hourAnimationToken].getIndicatorColor());
+          patBarPlotsForHourAni[DOWN].setBgColor(tempBgColor);
+          patBarPlotsForHourAni[DOWN].setBarColor(tempBarColor);
           
           hourAnimationState = MID_MOVEMENT_UPDATE;
         } else { // LEDS go up
           debug && Serial.println("MID_MOVEMENT_INI UP");
+          debug && Serial.print(hourAnimationToken);
           ledStripsState[hourAnimationToken] = HOUR_ANIMATION_UP;
           patBarPlotsForHourAni[UP].restart();
           patBarPlotsForHourAni[UP].setStartPosition(0);
-          patBarPlotsForHourAni[UP].setEndPosition(tempValueForHourGlass);
-          patBarPlotsForHourAni[UP].setBgColor(patHourGlassesForPastHours[hourAnimationToken].getBgColor());
-          patBarPlotsForHourAni[UP].setBarColor(patHourGlassesForPastHours[hourAnimationToken].getIndicatorColor());
+          patBarPlotsForHourAni[UP].setEndPosition(tempIndicator);
+          patBarPlotsForHourAni[UP].setBgColor(tempBgColor);
+          patBarPlotsForHourAni[UP].setBarColor(tempBarColor);
           
           hourAnimationState = MID_MOVEMENT_UPDATE;
         }
         break;
       case MID_MOVEMENT_UPDATE:
         debug && Serial.println("MID_MOVEMENT_UPDATE");
+        debug && Serial.print(hourAnimationToken);
         bool isExpired;
         if(hourAnimationMidMovState == DOWN){  // LED Go DOWN
           patBarPlotsForHourAni[DOWN].update();
@@ -196,9 +222,11 @@ void loop()
           if(/*NEED TO MOVE TO NEXT ROD && NEXT ROD = LAST ONE*/ hourAnimationMidMovState == UP && hourAnimationToken ==  1)
           {
             debug && Serial.println("GO LAST ROUND");
+            debug && Serial.print(hourAnimationToken);
             
           } else if(/*FROM DOWN TO UP*/ hourAnimationMidMovState == DOWN){
             debug && Serial.println("GO FROM DOWN TO UP");
+            debug && Serial.print(hourAnimationToken);
             
             //State Transition Tasks
             ledStripsState[hourAnimationToken] = HOUR_ANIMATION_REMAIN;
@@ -208,6 +236,7 @@ void loop()
             
           } else if(/*NEED TO MOVE TO NEXT ROD*/ hourAnimationMidMovState == UP){
               debug && Serial.println("GO NEXT ROUND");
+              debug && Serial.print(hourAnimationToken);
             
             
               // State Transition Task
@@ -215,7 +244,8 @@ void loop()
               hourAnimationMidMovState = DOWN;
               // Change the current rod back to hourglass
               ledStripsState[hourAnimationToken] = NORMAL;
-              
+              debug && Serial.print("tempValue= ");
+              debug && Serial.println(tempValueForHourGlass);
               patHourGlassesForPastHours[hourAnimationToken].setActualValueBeingStored(tempValueForHourGlass);
               hourAnimationToken -= 2;
           }
