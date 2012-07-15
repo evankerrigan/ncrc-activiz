@@ -6,8 +6,8 @@
 #include <Wire.h>
 
 #define IR_AUDIO  0 // ADC channel to capture
-#define A_MINUTE 60
-#define A_HOUR 60
+#define A_MINUTE 6
+#define A_HOUR 6
 // Debug
 boolean debug = DEBUG_FLAG;
 //*****
@@ -100,7 +100,7 @@ byte statePatHourGlassForMin = NORMAL;
 
 byte second = 0;
 byte minute = 0;
-
+byte secondInHourGlassForSec = 0;
 
 
 // Pattern Sets
@@ -139,8 +139,8 @@ void setup()
   
   
   // Feed fake data for the hour glasses which stored the human voice information in the past hours
-  patHourGlassForPastHour.setActualValueBeingStored(29);
-  patHourGlassForMin.setActualValueBeingStored(15);
+  //patHourGlassForPastHour.setActualValueBeingStored(29);
+  //patHourGlassForMin.setActualValueBeingStored(15);
   
   // Reset Barplot remain
   patBarPlotForHourAniRemain.setStartPosition(0);
@@ -182,24 +182,22 @@ void loop()
           
           // I2C Testing
           
-          sendEvent(10);  //test
+          //sendEvent(10);  //test
           
           /** Should put all the Pattern updates which will only happened *one* time
           *   in each second here.
           *   For example, if you only want to update a Pattern one time when voices is detected in current 
           *   one second, you should put the update code here.
           **/
-          patHourGlassForSec.update();
-          second++;
-          
-          ;
-          if(second == A_MINUTE){
+          if(patHourGlassForSec.update())
+            secondInHourGlassForSec++;
+
+          if(secondInHourGlassForSec == A_MINUTE){
             patHourGlassForMin.update();
             //patHourGlassForSec.restart();
-            second =0;
-            minute++;
+            secondInHourGlassForSec=0;
             if(minute == A_HOUR){
-              sendEvent(patHorGlassForMin.getActualValueBeingStored());
+              
             }
           }
           
@@ -215,14 +213,15 @@ void loop()
   // Every second do ...
   if(oneSec.update()){
     humanVoiceHasBeenDetected = false;
-//    currentTimeSec++;
-//    if(currentTimeSec >= A_MINUTE){
-//      currentTimeSec = 0;
-//      currentTimeMin++;
-//      if(currentTimeMin >= A_HOUR){
-//        hourAnimationHasStarted = true;
-//      }
-//    }
+    second++;
+    if(second == A_MINUTE){
+      minute++;
+      second = 0;
+      if(minute == A_HOUR){
+        sendEvent(patHourGlassForPastHour.getActualValueBeingStored());
+        minute = 0;
+      }
+    }
     oneSec.clearExpired();
   }
 
@@ -254,6 +253,7 @@ void loop()
     Serial.println(hourAnimationState);
     switch(hourAnimationState){
       case S00:  // Initilize ROD 3
+        patBarPlotForHourAni.restart();
         patBarPlotForHourAni.setStartPosition( patHourGlassForPastHour.getIndicator() );
         patBarPlotForHourAni.setEndPosition(0);
         patBarPlotForHourAni.setBgColor( patHourGlassForPastHour.getBgColor() );
@@ -308,6 +308,7 @@ void loop()
           statePatHourGlassForMin = NORMAL;
           hourAnimationForMasterHasStarted = false;
           hourAnimationState = S00;
+          state = S_NORMAL;
         }
         break;
     }

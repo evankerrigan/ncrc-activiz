@@ -83,6 +83,7 @@ byte hourAnimationToken = NUM_LED_STRIPS_SLAVE -1; //The Token starts from the l
 byte hourAnimationMidMovState = DOWN; //DOWN or UP
 byte ledStripsState[NUM_LED_STRIPS_SLAVE];
 byte tempValueForHourGlass;
+byte actualValueForLastRod = 0; // Send from Master
 // Pattern Sets
 
 PatternHourGlass patHourGlassesForPastHours[] = {PatternHourGlass(oceanicblue, algaegreen, darkgreen, false),
@@ -164,6 +165,7 @@ void loop()
         debug && Serial.println("FIRST_MOVEMENT_INI");
         debug && Serial.print(" indicator = ");
         debug && Serial.println(patHourGlassesForPastHours[hourAnimationToken].getIndicator());
+        patBarPlotsForHourAni[DOWN].restart();
         patBarPlotsForHourAni[DOWN].setStartPosition(patHourGlassesForPastHours[hourAnimationToken].getIndicator());
         patBarPlotsForHourAni[DOWN].setEndPosition(0);
         patBarPlotsForHourAni[DOWN].setBgColor(patHourGlassesForPastHours[hourAnimationToken].getBgColor());
@@ -238,6 +240,7 @@ void loop()
             debug && Serial.println("GO LAST ROUND");
             debug && Serial.print(hourAnimationToken);
             
+            patHourGlassesForPastHours[hourAnimationToken].setActualValueBeingStored(tempValueForHourGlass);
             ledStripsState[hourAnimationToken] = NORMAL;
             hourAnimationState = WAIT;
             finishFirstFourRods = true;
@@ -280,20 +283,33 @@ void loop()
          }
          break;
        case LAST_MOVEMENT_INI:
+         debug && Serial.println("LAST_MOVEMENT_INI");
          hourAnimationToken = 0;
          patBarPlotsForHourAni[UP].restart();
          patBarPlotsForHourAni[UP].setStartPosition(0);
-         patBarPlotsForHourAni[UP].setEndPosition(10);  //test
+         tempIndicator = actualValueForLastRod % 30;
+         
+         Serial.print("indicator= ");
+         Serial.println(tempIndicator);
+         
+         tempBarColor = (actualValueForLastRod > 30) ? darkgreen : algaegreen;
+         patBarPlotsForHourAni[UP].setEndPosition(tempIndicator);  //test
          patBarPlotsForHourAni[UP].setBgColor(tempBgColor);  //test
          patBarPlotsForHourAni[UP].setBarColor(tempBarColor);  //test
          ledStripsState[hourAnimationToken] = HOUR_ANIMATION_UP;
+         hourAnimationState = LAST_MOVEMENT_UPDATE;
          break;
        case LAST_MOVEMENT_UPDATE:
+         debug && Serial.println("LAST_MOVEMENT_UPDATE");
+         patBarPlotsForHourAni[UP].update();
          if(patBarPlotsForHourAni[UP].isExpired()){
            ledStripsState[hourAnimationToken] = NORMAL;
-           patHourGlassesForPastHours[hourAnimationToken].setActualValueBeingStored(10); //test
+           patHourGlassesForPastHours[hourAnimationToken].setActualValueBeingStored(actualValueForLastRod); //test
            hourAnimationHasStarted = false;
            state = S_NORMAL;
+           
+           // Reset state
+           hourAnimationState = FIRST_MOVEMENT_INI;
          }
          break;
        default:  //Do nothing
@@ -344,11 +360,14 @@ void receiveEvent(int howMany)
   // receive on byte from master
   if(state == S_NORMAL){
     byte incomingByte = Wire.read();
+
+    actualValueForLastRod = incomingByte;
+
+    Serial.print("Receive=");
+    Serial.println(actualValueForLastRod);
   
-    if(incomingByte == EVENT_HA_START){
-      hourAnimationHasStarted = true;
-      state = S_HOUR_ANIMATION_HEAD;
-    }
+    hourAnimationHasStarted = true;
+    state = S_HOUR_ANIMATION_HEAD;
   } 
 }
 
@@ -359,6 +378,7 @@ void requestEvent()
     Wire.write(finishFirstFourRods);
     if(finishFirstFourRods == true){
       state = S_HOUR_ANIMATION_TAIL;
+      finishFirstFourRods = false;
     }
   }
 }
