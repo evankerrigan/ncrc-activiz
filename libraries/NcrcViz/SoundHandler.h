@@ -24,7 +24,7 @@
 #define T_SOUND_REMAIN_RANGE 3	// Should test the real value
 #define T_SOUND_REMAIN_RANGE_SQ T_SOUND_REMAIN_RANGE*T_SOUND_REMAIN_RANGE
 
-#define T_SOUND_HUMAN_VOICE 63	//Thresold for FFT analysis, default = 70
+#define T_SOUND_HUMAN_VOICE 55	//Thresold for FFT analysis, default = 70
 
 //Event
 #define E_SOUND_REMAIN 0

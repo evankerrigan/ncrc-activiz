@@ -80,7 +80,10 @@ void PatternHourGlass::advance()
 		// and the indicator will go down to zero
 		// To make it looks more organic, and pretty, add PatternBarPlotToBarPlot
 		// Also, should lock the indicator when we are in transition state
-		inTransition = (allowTransition & true);
+		
+		inTransition = (allowTransition && true);
+		//inTransition = true;
+		
 		transitionColorIndex = tempColorIndex;
 		iniTransition();
 		
@@ -167,7 +170,8 @@ byte PatternHourGlass::getActualValueBeingStored()
 
 void PatternHourGlass::setActualValueBeingStored(byte value)
 {
-	actualValueBeingStored = value-1; // actualValueBeingStored will be added 1 when update,  
+	
+	actualValueBeingStored = value; // actualValueBeingStored will be added 1 when update,  
 									  // so we store value-1 here, it is a tricky thing.
 	
 	// Change the value stored will influence the indicator and indicator color
@@ -176,7 +180,7 @@ void PatternHourGlass::setActualValueBeingStored(byte value)
 	byte tempColorIndex = currentColorIndex;
 	currentColorIndex = (actualValueBeingStored / (maxValueCanBePresentedOnHourGlass/indicatorUnit)) % DEFAULT_MAX_COLORS;
 	
-	update();
+	//update();
 }
 
 void PatternHourGlass::setReverse(bool reverse)

@@ -12,10 +12,16 @@ boolean debug = DEBUG_FLAG;
 //*****
 
 // Master and Slave Protocal
-//const int SLAVE_ADDRESS = 1;
-//#define EVENT_HA_START 0  //HA = Hour Animation
-//#define EVENT_HA_LAST 1
+#define EVENT_HA_START 0  //HA = Hour Animation
+#define EVENT_HA_LAST_ROD 1
+#define SLAVE_ADDRESS 1
 
+#define S_NORMAL 0
+#define S_HOUR_ANIMATION_HEAD 1
+#define S_HOUR_ANIMATION_TAIL 2
+byte state = 0;
+
+bool finishFirstFourRods = 0;
 
 // Using Classes from ledcontroller library
 using LedController::Color; 
@@ -57,6 +63,7 @@ byte currentTimeMin = 0;
 #define LAST_MOVEMENT_INI 4
 #define LAST_MOVEMENT_UPDATE 5
 #define FINISH 6
+#define WAIT 7
 
 // Hour Animation Internal States for Middle Rods
 #define DOWN 0
@@ -70,7 +77,7 @@ byte currentTimeMin = 0;
 #define HOUR_ANIMATION_REMAIN 3
 
 // Control flags
-bool hourAnimationHasStarted = true;  // Master --> Slave
+bool hourAnimationHasStarted = false;  // Master --> Slave
 byte hourAnimationState = FIRST_MOVEMENT_INI;
 byte hourAnimationToken = NUM_LED_STRIPS_SLAVE -1; //The Token starts from the last led strip
 byte hourAnimationMidMovState = DOWN; //DOWN or UP
@@ -96,11 +103,17 @@ byte tempIndicator = 0;
 Color tempBgColor;
 Color tempBarColor;
 
+
+
 void setup()
 {  
   // Initialize ADC
   Serial.begin(9600);
   
+  // I2C Communication, Master - Slave Mode
+  Wire.begin(SLAVE_ADDRESS);
+  Wire.onReceive(receiveEvent);
+  Wire.onRequest(requestEvent);
   // Initialize LED strip
   for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
     ledStrips[i].setup();
@@ -125,9 +138,6 @@ void setup()
 void loop()
 {
   
-  //*****CONTROLLER & RENDERER BEGIN*************************
-
-
   /* Render background */
   // Clear LED strips color
   for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
@@ -147,6 +157,10 @@ void loop()
   if(hourAnimationHasStarted){
     switch(hourAnimationState){
       case FIRST_MOVEMENT_INI:  //DOWN
+        //Ini everything
+        hourAnimationToken = NUM_LED_STRIPS_SLAVE -1; //The Token starts from the last led strip
+        hourAnimationMidMovState = DOWN; //DOWN or UP
+      
         debug && Serial.println("FIRST_MOVEMENT_INI");
         debug && Serial.print(" indicator = ");
         debug && Serial.println(patHourGlassesForPastHours[hourAnimationToken].getIndicator());
@@ -224,6 +238,10 @@ void loop()
             debug && Serial.println("GO LAST ROUND");
             debug && Serial.print(hourAnimationToken);
             
+            ledStripsState[hourAnimationToken] = NORMAL;
+            hourAnimationState = WAIT;
+            finishFirstFourRods = true;
+            
           } else if(/*FROM DOWN TO UP*/ hourAnimationMidMovState == DOWN){
             debug && Serial.println("GO FROM DOWN TO UP");
             debug && Serial.print(hourAnimationToken);
@@ -252,7 +270,34 @@ void loop()
           
         }
         break;
-        
+       case WAIT:
+         debug && Serial.println("WAIT");
+         debug && Serial.print("finishFirstFourRods=");
+         debug && Serial.print(finishFirstFourRods);
+         
+         if(state == S_HOUR_ANIMATION_TAIL){
+           hourAnimationState = LAST_MOVEMENT_INI;
+         }
+         break;
+       case LAST_MOVEMENT_INI:
+         hourAnimationToken = 0;
+         patBarPlotsForHourAni[UP].restart();
+         patBarPlotsForHourAni[UP].setStartPosition(0);
+         patBarPlotsForHourAni[UP].setEndPosition(10);  //test
+         patBarPlotsForHourAni[UP].setBgColor(tempBgColor);  //test
+         patBarPlotsForHourAni[UP].setBarColor(tempBarColor);  //test
+         ledStripsState[hourAnimationToken] = HOUR_ANIMATION_UP;
+         break;
+       case LAST_MOVEMENT_UPDATE:
+         if(patBarPlotsForHourAni[UP].isExpired()){
+           ledStripsState[hourAnimationToken] = NORMAL;
+           patHourGlassesForPastHours[hourAnimationToken].setActualValueBeingStored(10); //test
+           hourAnimationHasStarted = false;
+           state = S_NORMAL;
+         }
+         break;
+       default:  //Do nothing
+         break;
     }
     
   } else {
@@ -285,14 +330,36 @@ void loop()
     ledStrips[i].send();
   }
 
+ 
+
 }
 
 
-/* Facility Functions Begin */
-void establishContact() {
- while (Serial.available() <= 0) {
-      Serial.write('A');   // send a capital A
-      delay(300);
+/* I2C Communication, State Transition */
+void receiveEvent(int howMany)
+{
+  Serial.println("Receive Event from Master");
+  Serial.print("State = ");
+  Serial.println(state);
+  // receive on byte from master
+  if(state == S_NORMAL){
+    byte incomingByte = Wire.read();
+  
+    if(incomingByte == EVENT_HA_START){
+      hourAnimationHasStarted = true;
+      state = S_HOUR_ANIMATION_HEAD;
+    }
+  } 
+}
+
+void requestEvent()
+{
+  Serial.println("Master Request Event");
+  if(state == S_HOUR_ANIMATION_HEAD ){
+    Wire.write(finishFirstFourRods);
+    if(finishFirstFourRods == true){
+      state = S_HOUR_ANIMATION_TAIL;
+    }
   }
 }
 

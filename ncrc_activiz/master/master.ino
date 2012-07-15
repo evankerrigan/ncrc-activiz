@@ -2,14 +2,27 @@
 #include <ffft.h>
 #include <NcrcViz.h>
 #include <ledcontroller.h>
-#include <avr/pgmspace.h>
+//#include <avr/pgmspace.h>
+#include <Wire.h>
 
 #define IR_AUDIO  0 // ADC channel to capture
-#define A_MINUTE 10
-#define A_HOUR 10
+#define A_MINUTE 60
+#define A_HOUR 60
 // Debug
 boolean debug = DEBUG_FLAG;
 //*****
+
+// Master and Slave protocal
+#define EVENT_HA_START 0  //HA = Hour Animation
+#define EVENT_HA_LAST_ROD 1
+
+#define SLAVE_ADDRESS 1
+
+#define S_NORMAL 0
+#define S_WAITING_RESPONSE 1
+#define S_HOUR_ANIMATION 2
+
+byte state = S_NORMAL;
 
 // For Analog to Digital Converter
 volatile  byte  position = 0;
@@ -32,12 +45,11 @@ using LedController::PatternHourGlass;
 using LedController::PatternBarPlotToBarPlot;
 using LedController::Interval;
 
-// Colors Used
+//Colors Used
 //Color red(0xFF0000);
-Color prettyblue(0x6FBAFC);
+//Color prettyblue(0x6FBAFC);
 Color oceanicblue(0x00FF80);
-Color skyblue(0x00FFFF);
-//Color dye(0x6F6F10);
+
 Color algaegreen(0x80FF00);
 Color darkgreen(0x00FF00);
 Color purple1(0x800080);
@@ -57,32 +69,49 @@ byte currentTimeSec = 0;
 byte currentTimeMin = 0;
 
 // Hour Animation States
-#define FIRST_MOVEMENT_INI 0
-#define FIRST_MOVEMENT_UPDATE 1
-#define MID_MOVEMENT_INI 2
-#define MID_MOVEMENT_UPDATE 3
-#define LAST_MOVEMENT_INI 4
-#define LAST_MOVEMENT_UPDATE 5
-#define FINISH 6
+#define S00 0
+#define S01 1
+#define S10 2
+#define S11 3
+#define S20 4
+#define S21 5
+
+// LED Light Mode
+#define NORMAL 0
+#define HOUR_ANIMATION_UP 1
+#define HOUR_ANIMATION_DOWN 2
+#define HOUR_ANIMATION_REMAIN 3
 
 // Hour Animation Internal States for Middle Rods
 #define DOWN 0
 #define UP 1
 
 
-// Control flags
-bool hourAnimationHasStarted = true;
-bool hourAnimationState = FIRST_MOVEMENT_INI;
-byte hourAnimationMidMovState = DOWN; //DOWN or UP
+// Hour Animation Variables
+byte tempValue;
+byte tempIndicator;
+Color tempBgColor;
+Color tempBarColor;
+bool hourAnimationHasStarted = false;
+bool hourAnimationForMasterHasStarted = false;
+byte hourAnimationState = S00;
+byte statePatHourGlassForPastHour = NORMAL;
+byte statePatHourGlassForMin = NORMAL;
+
+byte second = 0;
+byte minute = 0;
+
+
 
 // Pattern Sets
 PatternChangingColorColumn patCCC = PatternChangingColorColumn(purple1); //Pattern for Led strip 1
 
-PatternHourGlass patHourGlassForSec = PatternHourGlass(prettyblue, oceanicblue, skyblue);
+PatternHourGlass patHourGlassForSec = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
 PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
-PatternHourGlass patHourGlassForPastHour = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
-
-PatternBarPlotToBarPlot patBarPlotForHourAni = PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen, 1000);
+PatternHourGlass patHourGlassForPastHour = PatternHourGlass(oceanicblue, algaegreen, darkgreen, false);
+//
+PatternBarPlotToBarPlot patBarPlotForHourAni = PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen);
+PatternBarPlotToBarPlot patBarPlotForHourAniRemain = PatternBarPlotToBarPlot(0, 0, oceanicblue, oceanicblue);
 
 void setup()
 {  
@@ -93,6 +122,8 @@ void setup()
   Serial.begin(9600);
   adcInit();
   adcCalb();
+  
+  Wire.begin();  // Join I2C bus as a master
   
   // Initialize LED strip
   for(byte i=0; i < NUM_LED_STRIPS; i++){
@@ -108,7 +139,12 @@ void setup()
   
   
   // Feed fake data for the hour glasses which stored the human voice information in the past hours
-  patHourGlassForPastHour.setActualValueBeingStored(5);
+  patHourGlassForPastHour.setActualValueBeingStored(29);
+  patHourGlassForMin.setActualValueBeingStored(15);
+  
+  // Reset Barplot remain
+  patBarPlotForHourAniRemain.setStartPosition(0);
+  
   //Serial.println("ProgramStart");
   Serial.print("freeMemory()=");
   Serial.println(freeMemory());
@@ -117,7 +153,8 @@ void setup()
 
 void loop()
 {
-  
+  Serial.print("state=");
+  Serial.println(state);
   if (position == FFT_N)
   {
     //Serial.print(1);  
@@ -143,17 +180,27 @@ void loop()
           // First time detect voice within current one second
           humanVoiceHasBeenDetected = true;
           
+          // I2C Testing
+          
+          sendEvent(10);  //test
+          
           /** Should put all the Pattern updates which will only happened *one* time
           *   in each second here.
           *   For example, if you only want to update a Pattern one time when voices is detected in current 
           *   one second, you should put the update code here.
           **/
           patHourGlassForSec.update();
+          second++;
           
-          byte timeStoredInHourGlassForSec = patHourGlassForSec.getActualValueBeingStored();
-          if(timeStoredInHourGlassForSec == A_MINUTE - 1){
-            //patHourGlassForMin.update();
-            patHourGlassForSec.restart();
+          ;
+          if(second == A_MINUTE){
+            patHourGlassForMin.update();
+            //patHourGlassForSec.restart();
+            second =0;
+            minute++;
+            if(minute == A_HOUR){
+              sendEvent(patHorGlassForMin.getActualValueBeingStored());
+            }
           }
           
       }
@@ -190,6 +237,8 @@ void loop()
     patHourGlassForSec.updateSine();
     patHourGlassForMin.updateSine();
     patHourGlassForPastHour.updateSine();  
+    patBarPlotForHourAni.updateSine();
+    patBarPlotForHourAniRemain.updateSine();
   /* finish render background*/
 
   // 
@@ -199,59 +248,134 @@ void loop()
     // is detected to here.
     patCCC.update();
   }
-  
-  // Hour Animation
-//  if(hourAnimationHasStarted){
-//    switch(hourAnimationState){
-//      case FIRST_MOVEMENT_INI:
-//        patBarPlotForHourAni.setStartPosition(patHourGlassesForPastHours[0].getIndicator());
-//        patBarPlotForHourAni.setEndPosition(0);
-//        patBarPlotForHourAni.setBgColor(patHourGlassesForPastHours[0].getBgColor());
-//        patBarPlotForHourAni.setBarColor(patHourGlassesForPastHours[0].getIndicatorColor());
-//        hourAnimationState = FIRST_MOVEMENT_UPDATE;
-//        break;
-//      case FIRST_MOVEMENT_UPDATE:
-//        patBarPlotForHourAni.update();
-//        if(patBarPlotForHourAni.isExpired()){
-//          hourAnimationState = MID_MOVEMENT_INI;
-//          
-//        }
-//        //patBarPlotForHourAni.apply(ledStrips[3].getColors());
-//        break;
-//      case MID_MOVEMENT_INI:
-//        if(true){ // A placeholder here, if the current rod hasn't finished it's animation, keep update it, 
-//                  // otherwise, update the second middle rods
-//        
-//        } else {
-//        
-//        }
-//        
-//    }
-//    
-//  } else {
-//    
-//  }
-  
+  // Need to hook this control flag with master's state changing
+  if(hourAnimationForMasterHasStarted){
+    Serial.print(" S=");
+    Serial.println(hourAnimationState);
+    switch(hourAnimationState){
+      case S00:  // Initilize ROD 3
+        patBarPlotForHourAni.setStartPosition( patHourGlassForPastHour.getIndicator() );
+        patBarPlotForHourAni.setEndPosition(0);
+        patBarPlotForHourAni.setBgColor( patHourGlassForPastHour.getBgColor() );
+        patBarPlotForHourAni.setBarColor( patHourGlassForPastHour.getIndicatorColor() );
+        statePatHourGlassForPastHour = HOUR_ANIMATION_DOWN;
+        hourAnimationState = S01;
+        break;
+      case S01:  // ROD 3's LED GO DOWN
+        patBarPlotForHourAni.update();
+        if(patBarPlotForHourAni.isExpired()){
+          
+          statePatHourGlassForPastHour = HOUR_ANIMATION_REMAIN;
+          hourAnimationState = S10;
+        }  
+        break;
+      case S10:  // Initialize ROD 2
+        tempValue = patHourGlassForMin.getActualValueBeingStored();
+        tempIndicator = patHourGlassForMin.getIndicator();
+        tempBgColor = patHourGlassForMin.getBgColor();
+        tempBarColor = patHourGlassForMin.getIndicatorColor();  
+        patBarPlotForHourAni.setStartPosition(tempIndicator);
+        patBarPlotForHourAni.setEndPosition(0);
+        patBarPlotForHourAni.setBgColor(tempBgColor);
+        patBarPlotForHourAni.setBarColor(tempBarColor);
+        patBarPlotForHourAni.restart();
+        statePatHourGlassForMin = HOUR_ANIMATION_DOWN;
+        hourAnimationState = S11;
+        break;
+      case S11:  // ROD 2's LED GO DOWN
+        patBarPlotForHourAni.update();
+        if(patBarPlotForHourAni.isExpired()){
+          statePatHourGlassForMin = HOUR_ANIMATION_REMAIN;
+          hourAnimationState = S20;
+        }
+        break;
+      case S20: //Initialize ROD 3, prepare to go Up
+        statePatHourGlassForPastHour = HOUR_ANIMATION_UP;
+        patBarPlotForHourAni.setStartPosition(0);
+        patBarPlotForHourAni.setEndPosition(tempIndicator);
+        patBarPlotForHourAni.setBgColor(tempBgColor);
+        patBarPlotForHourAni.setBarColor(tempBarColor);
+        patBarPlotForHourAni.restart();
+        hourAnimationState = S21;
+        break;
+      case S21:
+        patBarPlotForHourAni.update();
+        if(patBarPlotForHourAni.isExpired()){
+          
+          patHourGlassForPastHour.setActualValueBeingStored(tempValue);
+          patHourGlassForMin.setActualValueBeingStored(0);
+          statePatHourGlassForPastHour = NORMAL;
+          statePatHourGlassForMin = NORMAL;
+          hourAnimationForMasterHasStarted = false;
+          hourAnimationState = S00;
+        }
+        break;
+    }
+  }
   // Put all the updated Colors onto the LED strips
+  // Rod 0
   patCCC.apply(ledStrips[0].getColors());
+  
+  // Rod 1
   patHourGlassForSec.apply(ledStrips[1].getColors());
-  patHourGlassForMin.apply(ledStrips[2].getColors());
-  patHourGlassForPastHour.apply(ledStrips[3].getColors());
-  //patHourGlassesForPastHours[1].apply(ledStrips[4].getColors());
+  
+  // Rod 2
+  switch(statePatHourGlassForMin)
+  {
+    case NORMAL:
+      patHourGlassForMin.apply(ledStrips[2].getColors());
+      break;
+    case HOUR_ANIMATION_UP:
+      patBarPlotForHourAni.apply(ledStrips[2].getColors());
+      break;
+    case HOUR_ANIMATION_DOWN:
+      patBarPlotForHourAni.apply(ledStrips[2].getColors());
+      break;
+    case HOUR_ANIMATION_REMAIN:
+      patBarPlotForHourAniRemain.apply(ledStrips[2].getColors());
+      break;
+    default:
+      patHourGlassForMin.apply(ledStrips[2].getColors());
+      break;
+  }
+  
+  // Rod 3
+  Serial.print(" R3=");
+  Serial.println(statePatHourGlassForPastHour);
+  switch(statePatHourGlassForPastHour)
+  {
+    case NORMAL:
+      patHourGlassForPastHour.apply(ledStrips[3].getColors());
+      break;
+    case HOUR_ANIMATION_UP:
+      patBarPlotForHourAni.apply(ledStrips[3].getColors());
+      break;
+    case HOUR_ANIMATION_DOWN:
+      patBarPlotForHourAni.apply(ledStrips[3].getColors());
+      break;
+    case HOUR_ANIMATION_REMAIN:
+      patBarPlotForHourAniRemain.apply(ledStrips[3].getColors());
+      break;
+    default:
+      patHourGlassForPastHour.apply(ledStrips[3].getColors());
+      break;
+  }
   
   for(byte i=0; i < NUM_LED_STRIPS; i++){  
     ledStrips[i].send();
   }
-
-}
-
-
-/* Facility Functions Begin */
-void establishContact() {
- while (Serial.available() <= 0) {
-      Serial.write('A');   // send a capital A
-      delay(300);
-  }
+  
+  // I2C Communication
+  if( state == S_WAITING_RESPONSE){
+    byte slaveFinished = requestSlaveState();
+    Serial.print("debug,slaveFinished=");
+    Serial.println(slaveFinished);
+    if(slaveFinished){
+      state = S_HOUR_ANIMATION;
+      hourAnimationForMasterHasStarted = true;
+    }
+  } 
+  
 }
 
 // free running ADC fills capture buffer
@@ -270,8 +394,8 @@ void adcInit(){
   /*  REFS0 : VCC use as a ref, IR_AUDIO : channel selection, ADEN : ADC Enable, ADSC : ADC Start, ADATE : ADC Auto Trigger Enable, ADIE : ADC Interrupt Enable,  ADPS : ADC Prescaler  */
   // free running ADC mode, f = ( 16MHz / prescaler ) / 13 cycles per conversion 
   ADMUX = _BV(REFS0) | IR_AUDIO; // | _BV(ADLAR); 
-//  ADCSRA = _BV(ADSC) | _BV(ADEN) | _BV(ADATE) | _BV(ADIE) | _BV(ADPS2) | _BV(ADPS1) //prescaler 64 : 19231 Hz - 300Hz per 64 divisions
-  ADCSRA = _BV(ADSC) | _BV(ADEN) | _BV(ADATE) | _BV(ADIE) | _BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0); // prescaler 128 : 9615 Hz - 150 Hz per 64 divisions, better for most music
+  ADCSRA = _BV(ADSC) | _BV(ADEN) | _BV(ADATE) | _BV(ADIE) | _BV(ADPS2) | _BV(ADPS1); //prescaler 64 : 19231 Hz - 300Hz per 64 divisions
+  //ADCSRA = _BV(ADSC) | _BV(ADEN) | _BV(ADATE) | _BV(ADIE) | _BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0); // prescaler 128 : 9615 Hz - 150 Hz per 64 divisions, better for most music
   sei();
 }
 void adcCalb(){
@@ -288,4 +412,26 @@ void adcCalb(){
   }
   zero = -midl/2;
   //Serial.println("Done.");
+}
+
+void sendEvent(byte value)
+{
+  
+  Wire.beginTransmission(SLAVE_ADDRESS);
+  Wire.write(value);
+  Wire.endTransmission();
+  state = S_WAITING_RESPONSE;
+}
+
+byte requestSlaveState()
+{
+  debug && Serial.println("requestSlaveState");
+  byte slaveFinished = 0;
+  Wire.requestFrom(SLAVE_ADDRESS,1);
+  if(Wire.available()){
+    slaveFinished = Wire.read();
+    Serial.print("slaveFinished()=");
+    Serial.println(slaveFinished);
+  }
+  return slaveFinished;
 }
