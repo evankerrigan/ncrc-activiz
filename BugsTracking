@@ -7,7 +7,7 @@
 
 + PatternBarPlotToBarPlot
 	- Should define a fix action time
-	- Check all the setters and getters check whether the pattern should
+	- Check all the setters and getters. Check whether the pattern should
 	  restart() once a variable is updated.
 	
 + slave

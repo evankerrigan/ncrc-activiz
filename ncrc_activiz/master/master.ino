@@ -6,8 +6,8 @@
 #include <Wire.h>
 
 #define IR_AUDIO  0 // ADC channel to capture
-#define A_MINUTE 6
-#define A_HOUR 6
+#define A_MINUTE 17
+#define A_HOUR 17
 // Debug
 boolean debug = DEBUG_FLAG;
 //*****
@@ -64,7 +64,7 @@ LedStrip ledStrips[] = {LedStrip(PIN_LED1_OUT_SDI, PIN_LED1_OUT_CKI),
                        LedStrip(PIN_LED4_OUT_SDI, PIN_LED4_OUT_CKI)};
 
 // Interval for Controller
-Interval oneSec = Interval(1000);
+Interval oneSec = Interval(500);
 byte currentTimeSec = 0;
 byte currentTimeMin = 0;
 
@@ -104,7 +104,7 @@ byte secondInHourGlassForSec = 0;
 
 
 // Pattern Sets
-PatternChangingColorColumn patCCC = PatternChangingColorColumn(purple1); //Pattern for Led strip 1
+PatternChangingColorColumn patCCC = PatternChangingColorColumn(oceanicblue); //Pattern for Led strip 1
 
 PatternHourGlass patHourGlassForSec = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
 PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
@@ -133,9 +133,7 @@ void setup()
   }
   
   // Initialize Patterns
-  patCCC.addColor(purple2);
-  patCCC.addColor(purple3);
-  patCCC.addColor(purple3);
+  patCCC.addColor(algaegreen);
   
   
   // Feed fake data for the hour glasses which stored the human voice information in the past hours
@@ -146,15 +144,15 @@ void setup()
   patBarPlotForHourAniRemain.setStartPosition(0);
   
   //Serial.println("ProgramStart");
-  Serial.print("freeMemory()=");
-  Serial.println(freeMemory());
+  debug && Serial.print("freeMemory()=");
+  debug && Serial.println(freeMemory());
   delay(1000);
 }
 
 void loop()
 {
-  Serial.print("state=");
-  Serial.println(state);
+  debug && Serial.print("state=");
+  debug && Serial.println(state);
   if (position == FFT_N)
   {
     //Serial.print(1);  
@@ -194,6 +192,8 @@ void loop()
 
           if(secondInHourGlassForSec == A_MINUTE){
             patHourGlassForMin.update();
+            patHourGlassForMin.update();
+            patHourGlassForMin.update();
             //patHourGlassForSec.restart();
             secondInHourGlassForSec=0;
             if(minute == A_HOUR){
@@ -218,7 +218,8 @@ void loop()
       minute++;
       second = 0;
       if(minute == A_HOUR){
-        sendEvent(patHourGlassForPastHour.getActualValueBeingStored());
+        if(state == S_NORMAL)
+          sendEvent(patHourGlassForPastHour.getActualValueBeingStored());
         minute = 0;
       }
     }
@@ -249,8 +250,8 @@ void loop()
   }
   // Need to hook this control flag with master's state changing
   if(hourAnimationForMasterHasStarted){
-    Serial.print(" S=");
-    Serial.println(hourAnimationState);
+    debug && Serial.print(" S=");
+    debug && Serial.println(hourAnimationState);
     switch(hourAnimationState){
       case S00:  // Initilize ROD 3
         patBarPlotForHourAni.restart();
@@ -341,8 +342,8 @@ void loop()
   }
   
   // Rod 3
-  Serial.print(" R3=");
-  Serial.println(statePatHourGlassForPastHour);
+  debug && Serial.print(" R3=");
+  debug && Serial.println(statePatHourGlassForPastHour);
   switch(statePatHourGlassForPastHour)
   {
     case NORMAL:
@@ -369,8 +370,8 @@ void loop()
   // I2C Communication
   if( state == S_WAITING_RESPONSE){
     byte slaveFinished = requestSlaveState();
-    Serial.print("debug,slaveFinished=");
-    Serial.println(slaveFinished);
+    debug && Serial.print("debug,slaveFinished=");
+    debug && Serial.println(slaveFinished);
     if(slaveFinished){
       state = S_HOUR_ANIMATION;
       hourAnimationForMasterHasStarted = true;
@@ -431,8 +432,8 @@ byte requestSlaveState()
   Wire.requestFrom(SLAVE_ADDRESS,1);
   if(Wire.available()){
     slaveFinished = Wire.read();
-    Serial.print("slaveFinished()=");
-    Serial.println(slaveFinished);
+    debug && Serial.print("slaveFinished()=");
+    debug && Serial.println(slaveFinished);
   }
   return slaveFinished;
 }
