@@ -133,7 +133,7 @@ void setup()
   }
   
   // Initialize Patterns
-  patCCC.addColor(algaegreen);
+  //patCCC.addColor(algaegreen);
   
   
   // Feed fake data for the hour glasses which stored the human voice information in the past hours
@@ -153,6 +153,8 @@ void loop()
 {
   debug && Serial.print("state=");
   debug && Serial.println(state);
+  debug && Serial.print("minHourGlass=");
+  debug && Serial.println(patHourGlassForSec.getActualValueBeingStored());
   if (position == FFT_N)
   {
     //Serial.print(1);  
@@ -184,8 +186,8 @@ void loop()
           
           /** Should put all the Pattern updates which will only happened *one* time
           *   in each second here.
-          *   For example, if you only want to update a Pattern one time when voices is detected in current 
-          *   one second, you should put the update code here.
+          *   For example, if you only want to update a Pattern one time when voices is detected in the current 
+          *   one second interval, you should put the code for updating the pattern here.
           **/
           if(patHourGlassForSec.update())
             secondInHourGlassForSec++;
@@ -233,7 +235,7 @@ void loop()
     }
     
   // Update the sinosoidal background patterns for all the LED strips inherited PatternSineWave class
-    patCCC.updateSine();
+    
     patHourGlassForSec.updateSine();
     patHourGlassForMin.updateSine();
     patHourGlassForPastHour.updateSine();  
@@ -247,6 +249,7 @@ void loop()
     // Put all the code that needs to continusly update somethings within the current when human voice
     // is detected to here.
     patCCC.update();
+    patCCC.updateSine();
   }
   // Need to hook this control flag with master's state changing
   if(hourAnimationForMasterHasStarted){
