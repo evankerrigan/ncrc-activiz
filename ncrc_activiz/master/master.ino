@@ -113,6 +113,13 @@ PatternHourGlass patHourGlassForPastHour = PatternHourGlass(oceanicblue, algaegr
 PatternBarPlotToBarPlot patBarPlotForHourAni = PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen);
 PatternBarPlotToBarPlot patBarPlotForHourAniRemain = PatternBarPlotToBarPlot(0, 0, oceanicblue, oceanicblue);
 
+// For motion sensor
+#define SLOPE_MOTION_TO_SINEWAVE 2  // (80 sine wave frame - 40 sine wave frame) / 20sec
+#define SLOPE_NOMOTION_TO_SINEWAVE 1
+#define MAX_SINE_WAVE_FRAME 80 // Slowest sine wave pattern
+#define MIN_SINE_WAVE_FRAME 40 // Fastest sine wave pattern
+byte sineWaveFrame = MAX_SINE_WAVE_FRAME; // Initialization
+
 void setup()
 {  
   pinMode(PIN_IR_IN, INPUT);
@@ -132,6 +139,14 @@ void setup()
     ledStrips[i].send();
   }
   
+  // Initialize the sine wave pattern for all the patterns
+  patCCC.setNumOfFrames(sineWaveFrame);
+  patHourGlassForSec.setNumOfFrames(sineWaveFrame);
+  patHourGlassForMin.setNumOfFrames(sineWaveFrame);
+  patHourGlassForPastHour.setNumOfFrames(sineWaveFrame);
+  patBarPlotForHourAni.setNumOfFrames(sineWaveFrame);
+  patBarPlotForHourAniRemain.setNumOfFrames(sineWaveFrame);
+
   // Initialize Patterns
   //patCCC.addColor(algaegreen);
   
@@ -214,6 +229,30 @@ void loop()
 
   // Every second do ...
   if(oneSec.update()){
+    
+    int val = digitalRead(PIN_IR_IN);
+    Serial.print("motion=");
+    Serial.println(val);
+    
+    if(val == HIGH){
+      // Motion Detected
+      sineWaveFrame -= SLOPE_MOTION_TO_SINEWAVE;
+      if(sineWaveFrame < MIN_SINE_WAVE_FRAME)
+        sineWaveFrame = MIN_SINE_WAVE_FRAME;
+    } else {
+      // No Motion
+      sineWaveFrame += SLOPE_NOMOTION_TO_SINEWAVE;
+      if(sineWaveFrame > MAX_SINE_WAVE_FRAME)
+        sineWaveFrame = MAX_SINE_WAVE_FRAME;
+    }
+    
+    patCCC.setNumOfFrames(sineWaveFrame);
+    patHourGlassForSec.setNumOfFrames(sineWaveFrame);
+    patHourGlassForMin.setNumOfFrames(sineWaveFrame);
+    patHourGlassForPastHour.setNumOfFrames(sineWaveFrame);
+    patBarPlotForHourAni.setNumOfFrames(sineWaveFrame);
+    patBarPlotForHourAniRemain.setNumOfFrames(sineWaveFrame); 
+    
     humanVoiceHasBeenDetected = false;
     second++;
     if(second == A_MINUTE){

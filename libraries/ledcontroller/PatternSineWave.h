@@ -28,6 +28,7 @@ private:
 	float amplitude;
 	float origin;
 	byte sineWaveFrameCounter;
+	byte numOfFrames;
 	
 	
 	/**
@@ -84,6 +85,13 @@ public:
 	*	Set the Origin of the sinosoidal wave
 	*/
 	void setOrigin(float origin);
+
+	/*
+	*	Set how many number of frame for a sine wave
+	*	increase the frame will decrease the changing speed of the sine wave pattern
+	*	decrease the frame will increase the changing speed of the sine wave pattern
+	*/
+	void setNumOfFrames(byte frame);
 };
 
 LED_CONTROLLER_NAMESPACE_EXIT

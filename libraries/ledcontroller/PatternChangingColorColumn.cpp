@@ -18,15 +18,17 @@
 #define DEFAULT_COLOR 0x808080	// Middle Brightness White: r=g=b=128
 
 // For sinosoidal texture
-#define DEFAULT_SINE_WAVE_FRAMES 60
+#define DEFAULT_SINE_WAVE_FRAMES MAX_SINE_WAVE_FRAME
 #define DEFAULT_SINE_WAVE_ORIGIN 0.45	//min: 0.0 , max: 1.0
 #define DEFAULT_SINE_WAVE_AMPLITUDE 0.4	// origin + aplitude can not go over 1.0
-
+#define MAX_SINE_WAVE_FRAME 80
+#define MIN_SINE_WAVE_FRAME 40
 
 LED_CONTROLLER_NAMESPACE_USING
 PatternChangingColorColumn::PatternChangingColorColumn() :
 	amplitude(DEFAULT_SINE_WAVE_AMPLITUDE),
-	origin(DEFAULT_SINE_WAVE_ORIGIN)
+	origin(DEFAULT_SINE_WAVE_ORIGIN),
+	numOfFrames(DEFAULT_SINE_WAVE_FRAMES)
 {
 	Color defaultColor = Color(DEFAULT_COLOR);
 	addColor(defaultColor);
@@ -34,7 +36,8 @@ PatternChangingColorColumn::PatternChangingColorColumn() :
 
 PatternChangingColorColumn::PatternChangingColorColumn(const Color& color) :
 	amplitude(DEFAULT_SINE_WAVE_AMPLITUDE),
-	origin(DEFAULT_SINE_WAVE_ORIGIN)
+	origin(DEFAULT_SINE_WAVE_ORIGIN),
+	numOfFrames(DEFAULT_SINE_WAVE_FRAMES)
 {
 	addColor(color);
 }
@@ -61,7 +64,7 @@ bool PatternChangingColorColumn::update()
 bool PatternChangingColorColumn::updateSine()
 {
 	sineWaveFrameCounter++;
-	if(sineWaveFrameCounter >= DEFAULT_SINE_WAVE_FRAMES){
+	if(sineWaveFrameCounter >= numOfFrames){
 		sineWaveFrameCounter = 0;
 	}
 }
@@ -94,7 +97,7 @@ float PatternChangingColorColumn::calculateScale(byte aLedIndex)
 {
 	float phaseShift = float(aLedIndex)/STRIP_LENGTH;
 	float scale = origin + 
-		amplitude*sin((float(sineWaveFrameCounter)/DEFAULT_SINE_WAVE_FRAMES + phaseShift)*2*PI);
+		amplitude*sin((float(sineWaveFrameCounter)/numOfFrames + phaseShift)*2*PI);
 	return scale;
 }
 
@@ -144,4 +147,14 @@ bool PatternChangingColorColumn::isEmpty()
 		return true;
 	else 
 		return false;
+}
+
+void PatternChangingColorColumn::setNumOfFrames(byte frame)
+{
+	if(frame > MAX_SINE_WAVE_FRAME)
+		this->numOfFrames = MAX_SINE_WAVE_FRAME;
+	else if (frame < MIN_SINE_WAVE_FRAME)
+		this->numOfFrames = MIN_SINE_WAVE_FRAME;
+	else 
+		this->numOfFrames = frame; 
 }

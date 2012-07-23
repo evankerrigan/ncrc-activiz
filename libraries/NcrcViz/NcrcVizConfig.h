@@ -1,4 +1,4 @@
-#define DEBUG_FLAG 1
+#define DEBUG_FLAG 0
 #define RAW_DATA_FLAG 0
 
 #define PIN_LED1_OUT_SDI 2
