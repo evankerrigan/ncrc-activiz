@@ -17,7 +17,7 @@
 
 #define DEFAULT_SINE_WAVE_FRAMES 60
 #define DEFAULT_SINE_WAVE_ORIGIN 0.45	//min: 0.0 , max: 1.0
-#define DEFAULT_SINE_WAVE_AMPLITUDE 0.4	// origin + aplitude can not go over 1.0
+#define DEFAULT_SINE_WAVE_AMPLITUDE 0.4 	// origin + aplitude can not go over 1.0
 
 LED_CONTROLLER_NAMESPACE_USING
 

@@ -22,7 +22,7 @@ Parts
 Dependencies
 -----------
 
-+ [FFFT](http://code.google.com/p/neuroelec/downloads/list)
++ [FFFT](http://code.google.com/p/<noframes></noframes>euroelec/downloads/list)
 FFT Library for Arduino
 
 + [LED-Controller](https://github.com/markfickett/LED-Controller)
