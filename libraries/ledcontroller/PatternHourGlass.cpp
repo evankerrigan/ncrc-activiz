@@ -16,7 +16,8 @@
 #endif
 
 #define DEFAULT_MAX_LEDS_USED_BY_INDICATOR 32
-
+#define DEFAULT_MAX_VALUE_CAN_BE_STORED 60
+#define DEFAULT_MAX_VALUE_CAN_BE_PRESENTED (DEFAULT_MAX_VALUE_CAN_BE_STORED/2)
 #define DEFAULT_TRANSITION_TIME 2000
 LED_CONTROLLER_NAMESPACE_USING
 
@@ -24,7 +25,8 @@ PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, co
 :PatternSineWave(bgColor), transitionEachActionInterval(DEFAULT_TRANSITION_TIME)
 {
 	this->bgColor = bgColor;
-	maxValueCanBePresentedOnHourGlass = 30;
+	maxValueCanBePresentedOnHourGlass = DEFAULT_MAX_VALUE_CAN_BE_PRESENTED;
+	maxValueCanBeStoredInHourGlass = DEFAULT_MAX_VALUE_CAN_BE_STORED;
 	reverse = false;
 	currentColorIndex = 0;
 	indicatorUnit = 1;
@@ -40,7 +42,8 @@ PatternHourGlass::PatternHourGlass(const Color& bgColor, const Color& color1, co
 :PatternSineWave(bgColor), transitionEachActionInterval(DEFAULT_TRANSITION_TIME)
 {
 	this->bgColor = bgColor;
-	maxValueCanBePresentedOnHourGlass = 30;
+	maxValueCanBePresentedOnHourGlass = DEFAULT_MAX_VALUE_CAN_BE_PRESENTED;
+	maxValueCanBeStoredInHourGlass = DEFAULT_MAX_VALUE_CAN_BE_STORED;
 	reverse = false;
 	currentColorIndex = 0;
 	indicatorUnit = 1;
@@ -84,6 +87,7 @@ void PatternHourGlass::advance()
 		inTransition = (allowTransition && true);
 		//inTransition = true;
 		
+		
 		transitionColorIndex = tempColorIndex;
 		iniTransition();
 		
@@ -94,6 +98,11 @@ void PatternHourGlass::advance()
 		indicator = actualValueBeingStored % (maxValueCanBePresentedOnHourGlass/indicatorUnit);
 		indicator *= indicatorUnit;
 	}
+	
+	// Reset the value stored to zero once it reaches the maximum value
+	// in order to prevent overflow
+	if(actualValueBeingStored >= maxValueCanBeStoredInHourGlass)
+		actualValueBeingStored = 0;
 }
 
 bool PatternHourGlass::update()

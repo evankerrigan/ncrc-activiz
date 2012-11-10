@@ -33,6 +33,7 @@ private:
 	byte indicatorUnit;
 	byte actualValueBeingStored;			// 0 to 63
 	byte maxValueCanBePresentedOnHourGlass;	// Default: 32
+	byte maxValueCanBeStoredInHourGlass;	// max: 255, default = 60
 	bool reverse;
 	Color bgColor;
 	Color colors[DEFAULT_MAX_COLORS];

@@ -287,12 +287,14 @@ void loop()
          hourAnimationToken = 0;
          patBarPlotsForHourAni[UP].restart();
          patBarPlotsForHourAni[UP].setStartPosition(0);
+         
          tempIndicator = actualValueForLastRod % 30;
          
          Serial.print("indicator= ");
          Serial.println(tempIndicator);
          
          tempBarColor = (actualValueForLastRod > 30) ? darkgreen : algaegreen;
+         
          patBarPlotsForHourAni[UP].setEndPosition(tempIndicator);  //test
          patBarPlotsForHourAni[UP].setBgColor(tempBgColor);  //test
          patBarPlotsForHourAni[UP].setBarColor(tempBarColor);  //test
@@ -310,6 +312,7 @@ void loop()
            
            // Reset state
            hourAnimationState = FIRST_MOVEMENT_INI;
+           debug && Serial.println("Finish HA");
          }
          break;
        default:  //Do nothing
@@ -358,16 +361,16 @@ void receiveEvent(int howMany)
   Serial.print("State = ");
   Serial.println(state);
   // receive on byte from master
+  byte incomingByte = Wire.read();
   if(state == S_NORMAL){
-    byte incomingByte = Wire.read();
-
+    state = S_HOUR_ANIMATION_HEAD;
     actualValueForLastRod = incomingByte;
 
     Serial.print("Receive=");
     Serial.println(actualValueForLastRod);
   
     hourAnimationHasStarted = true;
-    state = S_HOUR_ANIMATION_HEAD;
+    
   } 
 }
 

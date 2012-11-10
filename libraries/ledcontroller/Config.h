@@ -5,6 +5,10 @@
 // Specify the number of LEDs on the strip.
 #define STRIP_LENGTH 32
 
+
+// Specify the number of LED strips
+#define STRIP_NUMBER 5 
+
 // If defined, use half-precision colors (4 bits per channel).
 //#define HALF_PRECISION
 
