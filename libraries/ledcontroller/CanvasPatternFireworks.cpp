@@ -26,8 +26,7 @@ LED_CONTROLLER_NAMESPACE_USING
 
 
 CanvasPatternFireworks::CanvasPatternFireworks(int dataPins [], int clockPins [], bool reverse, Color baseColor, Color fireworkColor)
-	 	: myDataPins(dataPins), myClockPins(clockPins), myReverse(reverse), myBaseColor(baseColor), myFireworkColor(fireworkColor) 
-	 	{ }
+
 
 
 

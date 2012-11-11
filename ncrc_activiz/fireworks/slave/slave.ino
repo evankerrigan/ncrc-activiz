@@ -10,11 +10,9 @@
 
 #define SLAVE_ADDRESS 1
 
-
 #define FIREWORK_INC 1
 #define FIREWORK_DEC 2
 #define FIREWORK_STOP 0
-
 // Using Classes from ledcontroller library
 using LedController::Color; 
 using LedController::LedStrip;
@@ -39,8 +37,10 @@ Color purple3(0x600070);
 LedStrip ledStrips[] = {LedStrip(PIN_LED1_OUT_SDI, PIN_LED1_OUT_CKI),
                        LedStrip(PIN_LED2_OUT_SDI, PIN_LED2_OUT_CKI),
                        LedStrip(PIN_LED3_OUT_SDI, PIN_LED3_OUT_CKI),
-                       LedStrip(PIN_LED4_OUT_SDI, PIN_LED4_OUT_CKI)};
-byte leds[4][32];
+                       LedStrip(PIN_LED4_OUT_SDI, PIN_LED4_OUT_CKI),
+                       LedStrip(PIN_LED5_OUT_SDI, PIN_LED5_OUT_CKI)};
+                       
+byte leds[NUM_LED_STRIPS_SLAVE][32];
 
 // Interval for Controller
 //Interval oneSec = Interval(1000);
@@ -57,7 +57,6 @@ byte leds[4][32];
 //PatternBarPlotToBarPlot patBarPlotForHourAni = PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen);
 //PatternBarPlotToBarPlot patBarPlotForHourAniRemain = PatternBarPlotToBarPlot(0, 0, oceanicblue, oceanicblue);
 
-
 //const long referenceMv = 5000;
 
 void setup()
@@ -70,16 +69,18 @@ void setup()
   // Initialize ADC
   Serial.begin(9600);
   
-  Wire.begin();  // Join I2C bus as a master
+  // Join I2C bus as a slave
+  Wire.begin(SLAVE_ADDRESS);
+  Wire.onReceive(receiveEvent);
   
   // Initialize LED strip
-  for(byte i=0; i < NUM_LED_STRIPS; i++){
+  for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
     ledStrips[i].setup();
     ledStrips[i].clear();
     ledStrips[i].send();
   }
   
-  for(byte i = 0; i < 4; i++){
+  for(byte i = 0; i < NUM_LED_STRIPS_SLAVE; i++){
     for(byte j=0; j < 32; j++){
       leds[i][j] = i * j;
     }
@@ -100,30 +101,18 @@ byte r = 0;
 byte pat_number = 0;
 boolean is_increase = true;
 byte num_fireworks = 0;
-byte is_fireworks[4][32]; // 0: false, 1: true(increase), 2:true(decrease illuminance)
-byte fireworks_color[4][32];
+byte is_fireworks[NUM_LED_STRIPS_SLAVE][32]; // 0: false, 1: true(increase), 2:true(decrease illuminance)
+byte fireworks_color[NUM_LED_STRIPS_SLAVE][32];
 
 void loop()
 { 
   // snippet from Arduino Cookbook pp.195-195
-  int val = digitalRead(PIN_IR_IN);
+//  int val = digitalRead(PIN_IR_IN);
 //  int mV = (val * referenceMv) / 1023;
 //  Serial.print(mV);
 //  Serial.print(",");
 //  int cm = getDistance(mV);
 //  Serial.println(cm);
-  
-  //if a user is close to the distance sensor, release a firework at a random position
-  if(val == HIGH){
-    byte i = random(NUM_LED_STRIPS_MASTER);
-    byte j = random(32);
-    // only 50% chance would have fireworks
-    int p = random(0, 100);
-    if( p >= 0) 
-      is_fireworks[i][j] = 1;
-    sendEvent(1); // detect motion
-//    delay(500);
-  }
   
   if(r == 250 )
     is_increase = false;
@@ -143,18 +132,17 @@ void loop()
   //*****CONTROLLER & RENDERER BEGIN*************************
   /* Render background */
   // Clear LED strips color
-    for(byte i=0; i < NUM_LED_STRIPS; i++){
+    for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){
       ledStrips[i].clear();
     }
  
  
   
-  for(byte i=0; i < NUM_LED_STRIPS; i++){  
+  for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){  
     Color* colors = ledStrips[i].getColors();
     for(byte j=0; j < 32; j++){
-      
       if(is_fireworks[i][j] == FIREWORK_INC || is_fireworks[i][j] == FIREWORK_DEC){
-         colors[j].setChannelValues(fireworks_color[i][j], colors[j].getChannelG() , colors[j].getChannelB() );
+         colors[j].setChannelValues(fireworks_color[i][j], colors[j].getChannelG(), colors[j].getChannelB() );
          if (is_fireworks[i][j] == FIREWORK_INC){ 
            fireworks_color[i][j]+= 3;
            if(fireworks_color[i][j] >= 250){
@@ -162,10 +150,9 @@ void loop()
            }
          } else { // FIREWORK_DEC
            fireworks_color[i][j]-= 3;
-           if(fireworks_color[i][j] <= 4){
+           if(fireworks_color[i][j] <= 6){
              is_fireworks[i][j] = FIREWORK_STOP;
            }
-
          } 
       } else {
       if(pat_number==0)
@@ -181,11 +168,11 @@ void loop()
    }
   ledStrips[i].send();
     
-  // Serial.print("i ");
-  // Serial.println(i);
-  // Serial.print("r ");
-  // Serial.println(r);
-  // Serial.println(pat_number);
+//  Serial.print("i ");
+//  Serial.println(i);
+//  Serial.print("r ");
+//  Serial.println(r);
+//  Serial.println(pat_number);
   
   // I2C Communication
 //  if( state == S_WAITING_RESPONSE){
@@ -196,11 +183,8 @@ void loop()
 //      state = S_HOUR_ANIMATION;
 //      hourAnimationForMasterHasStarted = true;
 //    }
-
 //    } 
   }
-  
-  delay(12); // time sync between master and slave 
 }
 //const int TABLE_ENTRIES = 12;
 //const int firstElement = 250; // first entry is 250 mV
@@ -219,14 +203,35 @@ void loop()
 //}
 //
 //
-void sendEvent(byte value)
-{
+
+//
+//byte requestSlaveState()
 //{
-//  
-  // Serial.println("SendEvent");
-  Wire.beginTransmission(SLAVE_ADDRESS);
-  Wire.write(value);
-  Wire.endTransmission();
+//  byte slaveFinished = 0;
+//  Wire.requestFrom(SLAVE_ADDRESS,1);
+//  if(Wire.available()){
+//    slaveFinished = Wire.read();
+//    Serial.print("slaveFinished()=");
+//    Serial.println(slaveFinished);
+//  }
+//  return slaveFinished;
+//}
+
+
+// Callback function
+void receiveEvent(int howMany)
+{
+  byte motionDetected = Wire.read();
+  Serial.print("motion ");
+  Serial.println(motionDetected);
+  
+  if(motionDetected){
+   //if a user is close to the distance sensor, release a firework at a random position
+    int p = random(0,100);
+    if(p >= 0){
+      byte i = random(NUM_LED_STRIPS_SLAVE);
+      byte j = random(32);
+      is_fireworks[i][j] = 1;
+    }
+  }
 }
-
-

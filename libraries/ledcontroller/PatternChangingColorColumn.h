@@ -30,6 +30,7 @@ private:
 	float amplitude;
 	float origin;
 	byte sineWaveFrameCounter;
+	byte numOfFrames;
 	
 	// The index of the color being displayed now
 	byte currentDisplayedColorIndex;
@@ -107,6 +108,13 @@ public:
 	*/
 	bool isFull();
 	bool isEmpty();
+	
+	/*
+	*	Set the number of frames for the sine wave
+	*	increase the frame will decrease the changing speed of the sine wave pattern
+	*	decrease the frame will increase the changing speed of the sine wave pattern
+	*/
+	void setNumOfFrames(byte frame);
 };
 
 LED_CONTROLLER_NAMESPACE_EXIT

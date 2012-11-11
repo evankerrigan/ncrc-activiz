@@ -36,6 +36,10 @@ void Color::setChannelValues(byte r, byte g, byte b) {
 	color[2] = b;
 }
 
+byte Color::getChannelR() {	return color[0]; }
+byte Color::getChannelG() { return color[1]; }
+byte Color::getChannelB() { return color[2]; }
+
 void Color::clear() {
 	memset(color, 0, sizeof(color));
 }

@@ -15,15 +15,18 @@
 #include "WProgram.h"
 #endif
 
-#define DEFAULT_SINE_WAVE_FRAMES 60
+#define DEFAULT_SINE_WAVE_FRAMES MAX_SINE_WAVE_FRAME
 #define DEFAULT_SINE_WAVE_ORIGIN 0.45	//min: 0.0 , max: 1.0
-#define DEFAULT_SINE_WAVE_AMPLITUDE 0.4 	// origin + aplitude can not go over 1.0
+#define DEFAULT_SINE_WAVE_AMPLITUDE 0.4	// origin + aplitude can not go over 1.0
+#define MAX_SINE_WAVE_FRAME 80 // Slowest sine wave pattern
+#define MIN_SINE_WAVE_FRAME 40 // Fastest sine wave pattern
 
 LED_CONTROLLER_NAMESPACE_USING
 
 PatternSineWave::PatternSineWave(const Color& bgColor) :
 	amplitude(DEFAULT_SINE_WAVE_AMPLITUDE),
-	origin(DEFAULT_SINE_WAVE_ORIGIN)
+	origin(DEFAULT_SINE_WAVE_ORIGIN),
+	numOfFrames(DEFAULT_SINE_WAVE_FRAMES)
 {
     this->bgColor = bgColor;
     restart();
@@ -37,7 +40,7 @@ bool PatternSineWave::update()
 bool PatternSineWave::advance()
 {
     sineWaveFrameCounter++;
-	if(sineWaveFrameCounter >= DEFAULT_SINE_WAVE_FRAMES){
+	if(sineWaveFrameCounter >= numOfFrames){
 		sineWaveFrameCounter = 0;
 	}
     return false;
@@ -53,7 +56,7 @@ float PatternSineWave::calculateScale(byte aLedIndex)
 {
 	float phaseShift = float(aLedIndex)/STRIP_LENGTH;
 	float scale = origin + 
-		amplitude*sin( (float(sineWaveFrameCounter)/DEFAULT_SINE_WAVE_FRAMES + phaseShift)*2*PI);
+		amplitude*sin( (float(sineWaveFrameCounter)/numOfFrames + phaseShift)*2*PI);
 	return scale;
 }
 
@@ -67,7 +70,7 @@ void PatternSineWave::apply(Color* stripColors){
 bool PatternSineWave::updateSine()
 {
 	sineWaveFrameCounter++;
-	if(sineWaveFrameCounter >= DEFAULT_SINE_WAVE_FRAMES){
+	if(sineWaveFrameCounter >= numOfFrames){
 		sineWaveFrameCounter = 0;
 	}
 }
@@ -91,4 +94,14 @@ void PatternSineWave::setOrigin(float origin)
 	else 
 		this->origin = origin;
 	
+}
+
+void PatternSineWave::setNumOfFrames(byte frame)
+{
+	if(frame > MAX_SINE_WAVE_FRAME)
+		this->numOfFrames = MAX_SINE_WAVE_FRAME;
+	else if (frame < MIN_SINE_WAVE_FRAME)
+		this->numOfFrames = MIN_SINE_WAVE_FRAME;
+	else 
+		this->numOfFrames = frame; 
 }

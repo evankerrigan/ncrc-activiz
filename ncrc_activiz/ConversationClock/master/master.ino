@@ -76,7 +76,7 @@ byte currentTimeMin = 0;
 #define S20 4
 #define S21 5
 
-// LED Light Mode 
+// LED Light Mode
 #define NORMAL 0
 #define HOUR_ANIMATION_UP 1
 #define HOUR_ANIMATION_DOWN 2
