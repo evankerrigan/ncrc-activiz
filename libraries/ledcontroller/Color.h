@@ -48,6 +48,10 @@ class Color {
 		void setCombinedValue(unsigned long combinedValue);
 		void setChannelValues(byte r, byte g, byte b);
 
+		// getters
+		byte getChannelR();
+		byte getChannelG();
+		byte getChannelB();
 		/** Reset the Color to black. */
 		void clear();
 
