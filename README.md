@@ -57,30 +57,19 @@ Link Dependent Libraries to Arduino's libraries
 
 Pin Definition
 --------------
-//(in NcrcViz library > NcrcVizConfig.h)
+(in NcrcViz library > NcrcVizConfig.h)
 
-#define DEBUG_FLAG 0
-#define RAW_DATA_FLAG 0
++ PIN_LED1_OUT_SDI 2
++ PIN_LED1_OUT_CKI 3
++ PIN_LED2_OUT_SDI 4
++ PIN_LED2_OUT_CKI 5
++ PIN_LED3_OUT_SDI 6
++ PIN_LED3_OUT_CKI 7
++ PIN_LED4_OUT_SDI 8
++ PIN_LED4_OUT_CKI 9
++ PIN_LED5_OUT_SDI 10
++ PIN_LED5_OUT_CKI 11
 
-#define PIN_LED1_OUT_SDI 2
-#define PIN_LED1_OUT_CKI 3
-#define PIN_LED2_OUT_SDI 4
-#define PIN_LED2_OUT_CKI 5
-#define PIN_LED3_OUT_SDI 6
-#define PIN_LED3_OUT_CKI 7
-#define PIN_LED4_OUT_SDI 8
-#define PIN_LED4_OUT_CKI 9
-#define PIN_LED5_OUT_SDI 10
-#define PIN_LED5_OUT_CKI 11
-
-#define PIN_IR_IN 13
-#define PIN_MIC_IN A0
-#define IR_AUDIO 0
-
-#define NUM_LEDS 32
-#define NUM_LED_STRIPS_SLAVE 5
-#define NUM_LED_STRIPS_MASTER 4
-#define NUM_LED_STRIPS 4 //For Compatability
-#define SLAVE_ADDRESS 1
-
-#define EVENT_DETECT_HUMAN_VOICE 1
++ PIN_IR_IN 13
++ PIN_MIC_IN A0
++ IR_AUDIO 0
