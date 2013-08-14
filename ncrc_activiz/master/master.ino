@@ -6,8 +6,8 @@
 #include <Wire.h>
 
 #define IR_AUDIO  0 // ADC channel to capture
-#define A_MINUTE 17
-#define A_HOUR 17
+#define A_MINUTE 6
+#define A_HOUR 6
 // Debug
 boolean debug = DEBUG_FLAG;
 //*****
@@ -64,7 +64,7 @@ LedStrip ledStrips[] = {LedStrip(PIN_LED1_OUT_SDI, PIN_LED1_OUT_CKI),
                        LedStrip(PIN_LED4_OUT_SDI, PIN_LED4_OUT_CKI)};
 
 // Interval for Controller
-Interval oneSec = Interval(500);
+Interval oneSec = Interval(1000);
 byte currentTimeSec = 0;
 byte currentTimeMin = 0;
 
@@ -76,7 +76,7 @@ byte currentTimeMin = 0;
 #define S20 4
 #define S21 5
 
-// LED Light Mode
+// LED Light Mode 
 #define NORMAL 0
 #define HOUR_ANIMATION_UP 1
 #define HOUR_ANIMATION_DOWN 2
@@ -104,7 +104,7 @@ byte secondInHourGlassForSec = 0;
 
 
 // Pattern Sets
-PatternChangingColorColumn patCCC = PatternChangingColorColumn(oceanicblue); //Pattern for Led strip 1
+PatternChangingColorColumn patCCC = PatternChangingColorColumn(purple1); //Pattern for Led strip 1
 
 PatternHourGlass patHourGlassForSec = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
 PatternHourGlass patHourGlassForMin = PatternHourGlass(oceanicblue, algaegreen, darkgreen);
@@ -112,13 +112,6 @@ PatternHourGlass patHourGlassForPastHour = PatternHourGlass(oceanicblue, algaegr
 //
 PatternBarPlotToBarPlot patBarPlotForHourAni = PatternBarPlotToBarPlot(30, 0, oceanicblue, algaegreen);
 PatternBarPlotToBarPlot patBarPlotForHourAniRemain = PatternBarPlotToBarPlot(0, 0, oceanicblue, oceanicblue);
-
-// For motion sensor
-#define SLOPE_MOTION_TO_SINEWAVE 2  // (80 sine wave frame - 40 sine wave frame) / 20sec
-#define SLOPE_NOMOTION_TO_SINEWAVE 1
-#define MAX_SINE_WAVE_FRAME 80 // Slowest sine wave pattern
-#define MIN_SINE_WAVE_FRAME 40 // Fastest sine wave pattern
-byte sineWaveFrame = MAX_SINE_WAVE_FRAME; // Initialization
 
 void setup()
 {  
@@ -139,16 +132,10 @@ void setup()
     ledStrips[i].send();
   }
   
-  // Initialize the sine wave pattern for all the patterns
-  patCCC.setNumOfFrames(sineWaveFrame);
-  patHourGlassForSec.setNumOfFrames(sineWaveFrame);
-  patHourGlassForMin.setNumOfFrames(sineWaveFrame);
-  patHourGlassForPastHour.setNumOfFrames(sineWaveFrame);
-  patBarPlotForHourAni.setNumOfFrames(sineWaveFrame);
-  patBarPlotForHourAniRemain.setNumOfFrames(sineWaveFrame);
-
   // Initialize Patterns
-  //patCCC.addColor(algaegreen);
+  patCCC.addColor(purple2);
+  patCCC.addColor(purple3);
+  patCCC.addColor(purple3);
   
   
   // Feed fake data for the hour glasses which stored the human voice information in the past hours
@@ -159,17 +146,15 @@ void setup()
   patBarPlotForHourAniRemain.setStartPosition(0);
   
   //Serial.println("ProgramStart");
-  debug && Serial.print("freeMemory()=");
-  debug && Serial.println(freeMemory());
+  Serial.print("freeMemory()=");
+  Serial.println(freeMemory());
   delay(1000);
 }
 
 void loop()
 {
-  debug && Serial.print("state=");
-  debug && Serial.println(state);
-  debug && Serial.print("minHourGlass=");
-  debug && Serial.println(patHourGlassForSec.getActualValueBeingStored());
+  Serial.print("state=");
+  Serial.println(state);
   if (position == FFT_N)
   {
     //Serial.print(1);  
@@ -201,15 +186,13 @@ void loop()
           
           /** Should put all the Pattern updates which will only happened *one* time
           *   in each second here.
-          *   For example, if you only want to update a Pattern one time when voices is detected in the current 
-          *   one second interval, you should put the code for updating the pattern here.
+          *   For example, if you only want to update a Pattern one time when voices is detected in current 
+          *   one second, you should put the update code here.
           **/
           if(patHourGlassForSec.update())
             secondInHourGlassForSec++;
 
           if(secondInHourGlassForSec == A_MINUTE){
-            patHourGlassForMin.update();
-            patHourGlassForMin.update();
             patHourGlassForMin.update();
             //patHourGlassForSec.restart();
             secondInHourGlassForSec=0;
@@ -229,38 +212,13 @@ void loop()
 
   // Every second do ...
   if(oneSec.update()){
-    
-    int val = digitalRead(PIN_IR_IN);
-    Serial.print("motion=");
-    Serial.println(val);
-    
-    if(val == HIGH){
-      // Motion Detected
-      sineWaveFrame -= SLOPE_MOTION_TO_SINEWAVE;
-      if(sineWaveFrame < MIN_SINE_WAVE_FRAME)
-        sineWaveFrame = MIN_SINE_WAVE_FRAME;
-    } else {
-      // No Motion
-      sineWaveFrame += SLOPE_NOMOTION_TO_SINEWAVE;
-      if(sineWaveFrame > MAX_SINE_WAVE_FRAME)
-        sineWaveFrame = MAX_SINE_WAVE_FRAME;
-    }
-    
-    patCCC.setNumOfFrames(sineWaveFrame);
-    patHourGlassForSec.setNumOfFrames(sineWaveFrame);
-    patHourGlassForMin.setNumOfFrames(sineWaveFrame);
-    patHourGlassForPastHour.setNumOfFrames(sineWaveFrame);
-    patBarPlotForHourAni.setNumOfFrames(sineWaveFrame);
-    patBarPlotForHourAniRemain.setNumOfFrames(sineWaveFrame); 
-    
     humanVoiceHasBeenDetected = false;
     second++;
     if(second == A_MINUTE){
       minute++;
       second = 0;
       if(minute == A_HOUR){
-        if(state == S_NORMAL)
-          sendEvent(patHourGlassForPastHour.getActualValueBeingStored());
+        sendEvent(patHourGlassForPastHour.getActualValueBeingStored());
         minute = 0;
       }
     }
@@ -274,7 +232,7 @@ void loop()
     }
     
   // Update the sinosoidal background patterns for all the LED strips inherited PatternSineWave class
-    
+    patCCC.updateSine();
     patHourGlassForSec.updateSine();
     patHourGlassForMin.updateSine();
     patHourGlassForPastHour.updateSine();  
@@ -288,12 +246,11 @@ void loop()
     // Put all the code that needs to continusly update somethings within the current when human voice
     // is detected to here.
     patCCC.update();
-    patCCC.updateSine();
   }
   // Need to hook this control flag with master's state changing
   if(hourAnimationForMasterHasStarted){
-    debug && Serial.print(" S=");
-    debug && Serial.println(hourAnimationState);
+    Serial.print(" S=");
+    Serial.println(hourAnimationState);
     switch(hourAnimationState){
       case S00:  // Initilize ROD 3
         patBarPlotForHourAni.restart();
@@ -384,8 +341,8 @@ void loop()
   }
   
   // Rod 3
-  debug && Serial.print(" R3=");
-  debug && Serial.println(statePatHourGlassForPastHour);
+  Serial.print(" R3=");
+  Serial.println(statePatHourGlassForPastHour);
   switch(statePatHourGlassForPastHour)
   {
     case NORMAL:
@@ -412,8 +369,8 @@ void loop()
   // I2C Communication
   if( state == S_WAITING_RESPONSE){
     byte slaveFinished = requestSlaveState();
-    debug && Serial.print("debug,slaveFinished=");
-    debug && Serial.println(slaveFinished);
+    Serial.print("debug,slaveFinished=");
+    Serial.println(slaveFinished);
     if(slaveFinished){
       state = S_HOUR_ANIMATION;
       hourAnimationForMasterHasStarted = true;
@@ -474,8 +431,8 @@ byte requestSlaveState()
   Wire.requestFrom(SLAVE_ADDRESS,1);
   if(Wire.available()){
     slaveFinished = Wire.read();
-    debug && Serial.print("slaveFinished()=");
-    debug && Serial.println(slaveFinished);
+    Serial.print("slaveFinished()=");
+    Serial.println(slaveFinished);
   }
   return slaveFinished;
 }

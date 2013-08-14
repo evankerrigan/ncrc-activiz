@@ -98,10 +98,13 @@ void setup()
 
 
 byte r = 0;
+// iterator for different background colors
 byte pat_number = 0;
-boolean is_increase = true;
-byte num_fireworks = 0;
+boolean is_increase = true; // a flag indicate whether the firework will become brighter or dimmer
+byte num_fireworks = 0; 
+// indicate which led is a firework, a 5 * 32 array
 byte is_fireworks[NUM_LED_STRIPS_SLAVE][32]; // 0: false, 1: true(increase), 2:true(decrease illuminance)
+// stores the brighness of fireworks
 byte fireworks_color[NUM_LED_STRIPS_SLAVE][32];
 
 void loop()
@@ -137,9 +140,12 @@ void loop()
     }
  
  
-  
+  // 
   for(byte i=0; i < NUM_LED_STRIPS_SLAVE; i++){  
     Color* colors = ledStrips[i].getColors();
+    
+    // Render background and fireworks
+    // - slave will receive a signal from master indicate a movement event is detected 
     for(byte j=0; j < 32; j++){
       if(is_fireworks[i][j] == FIREWORK_INC || is_fireworks[i][j] == FIREWORK_DEC){
          colors[j].setChannelValues(fireworks_color[i][j], colors[j].getChannelG(), colors[j].getChannelB() );
@@ -219,6 +225,8 @@ void loop()
 
 
 // Callback function
+// Receive a movement event from master
+// When motion is detected, a firework will be setup 
 void receiveEvent(int howMany)
 {
   byte motionDetected = Wire.read();

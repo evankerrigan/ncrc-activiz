@@ -230,12 +230,15 @@ void loop()
   // Every second do ...
   if(oneSec.update()){
     
+    // Detect Motion 
     int val = digitalRead(PIN_IR_IN);
     Serial.print("motion=");
     Serial.println(val);
     
     if(val == HIGH){
+      
       // Motion Detected
+      // if Motion is detected, sine wave speed increase, otherwise decrease
       sineWaveFrame -= SLOPE_MOTION_TO_SINEWAVE;
       if(sineWaveFrame < MIN_SINE_WAVE_FRAME)
         sineWaveFrame = MIN_SINE_WAVE_FRAME;
@@ -246,6 +249,7 @@ void loop()
         sineWaveFrame = MAX_SINE_WAVE_FRAME;
     }
     
+    // Set sin wave speed according to motion detected
     patCCC.setNumOfFrames(sineWaveFrame);
     patHourGlassForSec.setNumOfFrames(sineWaveFrame);
     patHourGlassForMin.setNumOfFrames(sineWaveFrame);
@@ -255,6 +259,7 @@ void loop()
     
     humanVoiceHasBeenDetected = false;
     second++;
+   
     if(second == A_MINUTE){
       minute++;
       second = 0;
@@ -466,6 +471,7 @@ void sendEvent(byte value)
   Wire.endTransmission();
   state = S_WAITING_RESPONSE;
 }
+
 
 byte requestSlaveState()
 {
